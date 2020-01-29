@@ -1,0 +1,591 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>main</title><meta name="generator" content="MATLAB 9.5"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2020-01-29"><meta name="DC.source" content="main.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h2>Contents</h2><div><ul><li><a href="#2">Part 1: No Channel QAM</a></li><li><a href="#3">Part 1: BPSK with moderate ISI channel</a></li><li><a href="#4">Part 2: BER of 1e-6 at SNR of 12dB in a moderate ISI channel</a></li></ul></div><pre class="codeinput"><span class="comment">%Karol Wadolowski - Project #0 Warm Up</span>
+clear; clc; close <span class="string">all</span>;
+</pre><h2 id="2">Part 1: No Channel QAM</h2><pre class="codeinput"><span class="comment">%First confirm that the theoretical and simulated BER and SER curves match</span>
+<span class="comment">%for several QAM constellations.</span>
+
+<span class="comment">%Simulation parameters</span>
+numIter = 1e2;                          <span class="comment">%Number of iterations</span>
+numSyms = 1e3;                          <span class="comment">%Number of symbols per iteration</span>
+SNRdB = 0:2:16;                         <span class="comment">%SNRs to use in dB</span>
+varN = 10.^(-SNRdB/10);                 <span class="comment">%Noise variance</span>
+lenSNR = length(SNRdB);                 <span class="comment">%Number of SNRs to test</span>
+M = [2,4,8,16];                         <span class="comment">%QAM constellation size</span>
+
+chan = 1;                               <span class="comment">%No channel</span>
+
+<span class="comment">%Run the simulation</span>
+figure(<span class="string">'units'</span>,<span class="string">'normalized'</span>,<span class="string">'outerposition'</span>,[0,0,1,1])
+<span class="keyword">for</span> ii = 1:length(M)
+    bar = waitbar(0,[num2str(M(ii)), <span class="string">' QAM'</span>]);
+
+    EbNodB = SNRdB - 10*log10(log2(M(ii)));         <span class="comment">%Energy per bit in dB</span>
+    <span class="comment">%The SNR to EbNo mapping is just dividing the linear SNR by number of</span>
+    <span class="comment">%bits per symbol.</span>
+
+    <span class="comment">%Bit/Symbol error rate for each SNR and each iteration</span>
+    berIter = nan(lenSNR,numIter);
+    serIter = nan(lenSNR,numIter);
+
+    <span class="keyword">for</span> jj = 1:numIter
+        <span class="comment">%Use the same message for each SNR</span>
+        txBits = randi([0,1],numSyms,log2(M(ii)));  <span class="comment">%Generate message bits</span>
+        txMSG = bi2de(txBits,<span class="string">'left-msb'</span>);           <span class="comment">%Transmitted message</span>
+        tx = qammod(txMSG,M(ii));                   <span class="comment">%Transmitted QAM signal</span>
+
+        <span class="keyword">for</span> kk = 1:lenSNR
+            txChan = filter(chan,1,tx);                     <span class="comment">%Apply the channel</span>
+
+            <span class="comment">%Note that the built awgn does not add complex noise for BPSK</span>
+            <span class="comment">%and thus causes issues</span>
+            <span class="keyword">if</span>(M(ii) == 2)
+                noise = sqrt(varN(kk)/2)*(randn(numSyms,1)+1j*randn(numSyms,1));
+                txNoisy = txChan + noise;                       <span class="comment">%Add noise</span>
+            <span class="keyword">else</span>
+                txNoisy = awgn(txChan,SNRdB(kk),<span class="string">'measured'</span>);    <span class="comment">%Add noise</span>
+            <span class="keyword">end</span>
+
+            rxMSG = qamdemod(txNoisy,M(ii));                <span class="comment">%Received message</span>
+            rxBits = de2bi(rxMSG,log2(M(ii)),<span class="string">'left-msb'</span>);   <span class="comment">%Received bits</span>
+
+            [~,berIter(kk,jj)] = biterr(txBits,rxBits);     <span class="comment">%Calculate BER</span>
+            serIter(kk,jj) = sum(txMSG ~= rxMSG)/numSyms;   <span class="comment">%Calculate SER</span>
+        <span class="keyword">end</span>
+        waitbar(jj/numIter,bar)
+    <span class="keyword">end</span>
+
+    berSim = mean(berIter,2);       <span class="comment">%Average BER for each simulated SNR</span>
+    serSim = mean(serIter,2);       <span class="comment">%Average SER for each simulated SNR</span>
+
+    <span class="comment">%Theoretical BER and SER curves</span>
+    <span class="keyword">if</span>(M(ii) == 2)
+        <span class="comment">%BPSK</span>
+        EbNo = 10.^(EbNodB/10);
+        berTh = qfunc(sqrt(2*EbNo));
+        serTh = berTh;
+    <span class="keyword">else</span>
+        <span class="comment">%General QAM</span>
+        [berTh,serTh] = berawgn(EbNodB,<span class="string">'qam'</span>,M(ii));
+        <span class="comment">%Note: For non rectangular qam configurations the theoretical and</span>
+        <span class="comment">%simulation BER curves do not match up. I believe this is because</span>
+        <span class="comment">%either there is a term missing in the SNR to EbNo mapping at the</span>
+        <span class="comment">%top of the code or (what I think is more likely) the berawgn</span>
+        <span class="comment">%function does not properly account for decision boundaries in the</span>
+        <span class="comment">%non-rectangular QAM configurations. So this would be for 32*4*k</span>
+        <span class="comment">%QAM sizes where k is a natural number. Note this refers to the QAM</span>
+        <span class="comment">%constellations used by the qammod function.</span>
+    <span class="keyword">end</span>
+
+    subplot(2,length(M),ii)
+    semilogy(SNRdB,berTh,<span class="string">'Linewidth'</span>,2)
+    hold <span class="string">on</span>;
+    semilogy(SNRdB,berSim,<span class="string">'--x'</span>,<span class="string">'Linewidth'</span>,2,<span class="string">'MarkerSize'</span>,10)
+    xlabel(<span class="string">'SNR (dB)'</span>)
+    ylabel(<span class="string">'BER'</span>)
+    title([num2str(M(ii)), <span class="string">' QAM: Bit Error Rate'</span>])
+    legend(<span class="string">'Theoretical'</span>,<span class="string">'Simulation'</span>)
+    grid <span class="string">on</span>
+
+    subplot(2,length(M),length(M)+ii)
+    semilogy(SNRdB,serTh,<span class="string">'Linewidth'</span>,2)
+    hold <span class="string">on</span>;
+    semilogy(SNRdB,serSim,<span class="string">'--x'</span>,<span class="string">'Linewidth'</span>,2,<span class="string">'MarkerSize'</span>,10)
+    xlabel(<span class="string">'SNR (dB)'</span>)
+    ylabel(<span class="string">'SER'</span>)
+    title([num2str(M(ii)), <span class="string">' QAM: Symbol Error Rate'</span>])
+    legend(<span class="string">'Theoretical'</span>,<span class="string">'Simulation'</span>)
+    grid <span class="string">on</span>
+
+    close(bar)
+<span class="keyword">end</span>
+sgtitle(<span class="string">'BER and SER for Various Size QAM'</span>)
+</pre><img vspace="5" hspace="5" src="main_01.png" alt=""> <h2 id="3">Part 1: BPSK with moderate ISI channel</h2><pre class="codeinput"><span class="comment">%For a moderate ISI channel using BPSK introduce BPSK to bring down the BER</span>
+<span class="comment">%Note: For BPSK BER and SER are the same, hence one plot</span>
+
+numIter = 5e2;                          <span class="comment">%Number of iterations</span>
+numSyms = 1e3;                          <span class="comment">%Number of symbols per iteration</span>
+SNRdB = 0:2:12;                         <span class="comment">%SNRs to use in dB</span>
+varN = 10.^(-SNRdB/10);                 <span class="comment">%Noise variance for BPSK</span>
+lenSNR = length(SNRdB);                 <span class="comment">%Number of SNRs to test</span>
+M = 2;                                  <span class="comment">%BPSK</span>
+trainLen = 1e2;                         <span class="comment">%Number of training symbols</span>
+chan = [1, .2, .4];                     <span class="comment">%Moderate ISI channel</span>
+
+<span class="comment">%Bit error rate for each SNR and iteration</span>
+berNone  = nan(lenSNR,numIter);         <span class="comment">%No ISI</span>
+berModUn = nan(lenSNR,numIter);         <span class="comment">%Moderate ISI, unequalized channel</span>
+ber2 = nan(lenSNR,numIter);             <span class="comment">%Moderate ISI, equalized channel</span>
+
+<span class="comment">%Run the simulation</span>
+bar = waitbar(0,<span class="string">'Moderate ISI'</span>);
+<span class="keyword">for</span> ii = 1:numIter
+    <span class="comment">%Use the same message for each SNR</span>
+    txBits = randi([0,1],numSyms,log2(M));  <span class="comment">%Generate message bits</span>
+    txMSG = bi2de(txBits,<span class="string">'left-msb'</span>);       <span class="comment">%Transmitted message</span>
+    tx = qammod(txMSG,M);                   <span class="comment">%Transmitted QAM signal</span>
+
+    <span class="keyword">for</span> jj = 1:lenSNR
+        <span class="comment">%No ISI</span>
+        txChan = tx;                                    <span class="comment">%Apply the channel</span>
+        noise = sqrt(varN(jj)/2)*(randn(numSyms,1)+1j*randn(numSyms,1));
+        txNoisy = txChan + noise;                       <span class="comment">%Add noise</span>
+        rxMSG = qamdemod(txNoisy,M);                    <span class="comment">%Received message</span>
+        rxBits = de2bi(rxMSG,log2(M),<span class="string">'left-msb'</span>);       <span class="comment">%Received bits</span>
+
+        [~,berNone(jj,ii)] = biterr(txBits,rxBits);     <span class="comment">%Calculate BER</span>
+
+        <span class="comment">%Moderate ISI, unequalized channel</span>
+        txChan = filter(chan,1,tx);                     <span class="comment">%Apply the channel</span>
+        noise = sqrt(varN(jj)/2)*(randn(numSyms,1)+1j*randn(numSyms,1));
+        txNoisy = txChan + noise;                       <span class="comment">%Add noise</span>
+        rxMSG = qamdemod(txNoisy,M);                    <span class="comment">%Received message</span>
+        rxBits = de2bi(rxMSG,log2(M),<span class="string">'left-msb'</span>);       <span class="comment">%Received bits</span>
+
+        [~,berModUn(jj,ii)] = biterr(txBits,rxBits);    <span class="comment">%Calculate BER</span>
+
+        <span class="comment">%Moderate ISI, equalized channel</span>
+        <span class="comment">%Use the same txNosiy as in the unequalized channel and use an</span>
+        <span class="comment">%equalizer. Using the same txNoisy gives a direct performance</span>
+        <span class="comment">%comparison.</span>
+        eq1 = dfe(1,2,lms(1e-2));                       <span class="comment">%Equalizer</span>
+        eq1.SigConst = qammod(0:(M-1),M);               <span class="comment">%Set constellation</span>
+        rxEq = equalize(eq1,txNoisy,tx(1:trainLen));    <span class="comment">%Received eq signal</span>
+        rxMSG = qamdemod(rxEq,M);                       <span class="comment">%Received message</span>
+        rxBits = de2bi(rxMSG,log2(M),<span class="string">'left-msb'</span>);       <span class="comment">%Received bits</span>
+
+        [~,ber2(jj,ii)] = biterr(txBits(trainLen+1:end,:),<span class="keyword">...</span>
+            rxBits(trainLen+1:end,:));                    <span class="comment">%Calculate BER</span>
+    <span class="keyword">end</span>
+    waitbar(ii/numIter,bar)
+<span class="keyword">end</span>
+close(bar)
+
+<span class="comment">%Average the BER curves</span>
+berNone  = mean(berNone,2);
+berModUn = mean(berModUn,2);
+ber2 = mean(ber2,2);
+
+<span class="comment">%Theoretical BER for BPSK no ISI</span>
+berTh = qfunc(sqrt(2*10.^(SNRdB/10)));
+
+figure(<span class="string">'units'</span>,<span class="string">'normalized'</span>,<span class="string">'outerposition'</span>,[0,0,1,1])
+semilogy(SNRdB,berTh,<span class="string">'Linewidth'</span>,2)
+hold <span class="string">on</span>
+semilogy(SNRdB,berNone,<span class="string">'--x'</span>,<span class="string">'Linewidth'</span>,2,<span class="string">'MarkerSize'</span>,10)
+semilogy(SNRdB,berModUn,<span class="string">'--x'</span>,<span class="string">'Linewidth'</span>,2,<span class="string">'MarkerSize'</span>,10)
+semilogy(SNRdB,ber2,<span class="string">'--x'</span>,<span class="string">'Linewidth'</span>,2,<span class="string">'MarkerSize'</span>,10)
+legend(<span class="string">'No ISI Theory'</span>,<span class="string">'No ISI Simulation'</span>,<span class="string">'Moderate ISI Un'</span>,<span class="string">'Moderate ISI Eq'</span>)
+title(<span class="string">'BER Curves for a Moderate ISI Channel'</span>)
+xlabel(<span class="string">'SNR (dB)'</span>)
+ylabel(<span class="string">'BER'</span>)
+grid <span class="string">on</span>
+</pre><img vspace="5" hspace="5" src="main_03.png" alt=""> <h2 id="4">Part 2: BER of 1e-6 at SNR of 12dB in a moderate ISI channel</h2><pre class="codeinput">numIter = 4e3;                          <span class="comment">%Number of iterations</span>
+numSyms = 1e3;                          <span class="comment">%Number of symbols per iteration</span>
+SNRdB = 0:2:12;                         <span class="comment">%SNRs to use in dB</span>
+varN = 10.^(-SNRdB/10);                 <span class="comment">%Noise variance for BPSK</span>
+lenSNR = length(SNRdB);                 <span class="comment">%Number of SNRs to test</span>
+k = 1;                                  <span class="comment">%Number of info bits</span>
+n = 2;                                  <span class="comment">%Number of output bits from encoder</span>
+M = 2^n;                                <span class="comment">%M QAM</span>
+trainLen = 3e2;                         <span class="comment">%Number of training symbols</span>
+fftaps = 1;                             <span class="comment">%Number of feed forward taps in eq</span>
+fbtaps = 2;                             <span class="comment">%Number of feed back raps in eq</span>
+trellis = poly2trellis([9],[561,753]);  <span class="comment">%Rate 1/2 convolutional encoder</span>
+chan = [1, .2, .4];                     <span class="comment">%Moderate ISI channel</span>
+
+<span class="comment">%Bit error rate for each SNR and iteration</span>
+ber2 = nan(lenSNR,numIter);             <span class="comment">%BER for part 2</span>
+
+<span class="comment">%Run the simulation</span>
+bar = waitbar(0,<span class="string">'Moderate ISI'</span>);
+<span class="keyword">for</span> ii = 1:numIter
+    <span class="comment">%Use the same message for each SNR</span>
+    txBits = randi([0,1],k,numSyms);        <span class="comment">%Generate message bits</span>
+    txBits = reshape(txBits,1,[]);
+
+    msgBits = convenc(txBits,trellis);      <span class="comment">%Encode the data</span>
+    msgBits = reshape(msgBits,n,numSyms)';
+    txMSG = bi2de(msgBits,<span class="string">'left-msb'</span>);      <span class="comment">%Transmitted message</span>
+    tx = qammod(txMSG,M);                   <span class="comment">%Transmitted QAM signal</span>
+
+    <span class="keyword">for</span> jj = 1:lenSNR
+        <span class="comment">%Moderate ISI, unequalized channel</span>
+        txChan = filter(chan,1,tx);                     <span class="comment">%Apply the channel</span>
+
+        <span class="keyword">if</span>(M == 2)
+            noise = sqrt(varN(jj)/2)*(randn(numSyms,1)+1j*randn(numSyms,1));
+            txNoisy = txChan + noise;                       <span class="comment">%Add noise</span>
+        <span class="keyword">else</span>
+            txNoisy = awgn(txChan,SNRdB(jj),<span class="string">'measured'</span>);    <span class="comment">%Add noise</span>
+        <span class="keyword">end</span>
+
+        eq1 = dfe(fftaps,fbtaps,lms(1e-2));             <span class="comment">%Equalizer</span>
+        eq1.SigConst = qammod(0:(M-1),M);               <span class="comment">%Set constellation</span>
+        rxEq = equalize(eq1,txNoisy,tx(1:trainLen));    <span class="comment">%Received eq signal</span>
+
+        rxMSG = qamdemod(rxEq,M);                       <span class="comment">%Received message</span>
+        rxBits = de2bi(rxMSG,log2(M),<span class="string">'left-msb'</span>);       <span class="comment">%Received bits</span>
+        rxBits = reshape(rxBits',1,[]);
+        decBits = vitdec(rxBits,trellis,numSyms,<span class="string">'trunc'</span>,<span class="string">'hard'</span>);
+
+        ind = k*trainLen+1;     <span class="comment">%k due to the ECC</span>
+        [~,ber2(jj,ii)] = biterr(txBits(ind:end),<span class="keyword">...</span>
+            decBits(ind:end));                          <span class="comment">%Calculate BER</span>
+    <span class="keyword">end</span>
+    waitbar(ii/numIter,bar)
+<span class="keyword">end</span>
+close(bar)
+
+<span class="comment">%Average the BER curve</span>
+ber2 = mean(ber2,2);
+
+<span class="comment">%Theoretical BER for BPSK no ISI</span>
+berTh = qfunc(sqrt(2*10.^(SNRdB/10)));
+
+figure(<span class="string">'units'</span>,<span class="string">'normalized'</span>,<span class="string">'outerposition'</span>,[0,0,1,1])
+semilogy(SNRdB,berTh,<span class="string">'Linewidth'</span>,2)
+hold <span class="string">on</span>
+semilogy(SNRdB,ber2,<span class="string">'--x'</span>,<span class="string">'Linewidth'</span>,2,<span class="string">'MarkerSize'</span>,10)
+legend(<span class="string">'No ISI Theory'</span>,<span class="string">'Moderate ISI: Equalization + ECC'</span>)
+title(<span class="string">'BER Curves for a Moderate ISI Channel'</span>)
+xlabel(<span class="string">'SNR (dB)'</span>)
+ylabel(<span class="string">'BER'</span>)
+grid <span class="string">on</span>
+</pre><img vspace="5" hspace="5" src="main_05.png" alt=""> <p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2018b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%Karol Wadolowski - Project #0 Warm Up
+clear; clc; close all;
+
+%% Part 1: No Channel QAM
+%First confirm that the theoretical and simulated BER and SER curves match
+%for several QAM constellations.
+
+%Simulation parameters
+numIter = 1e2;                          %Number of iterations
+numSyms = 1e3;                          %Number of symbols per iteration
+SNRdB = 0:2:16;                         %SNRs to use in dB
+varN = 10.^(-SNRdB/10);                 %Noise variance
+lenSNR = length(SNRdB);                 %Number of SNRs to test
+M = [2,4,8,16];                         %QAM constellation size
+
+chan = 1;                               %No channel
+
+%Run the simulation
+figure('units','normalized','outerposition',[0,0,1,1])
+for ii = 1:length(M)
+    bar = waitbar(0,[num2str(M(ii)), ' QAM']);
+    
+    EbNodB = SNRdB - 10*log10(log2(M(ii)));         %Energy per bit in dB
+    %The SNR to EbNo mapping is just dividing the linear SNR by number of 
+    %bits per symbol.
+    
+    %Bit/Symbol error rate for each SNR and each iteration
+    berIter = nan(lenSNR,numIter);
+    serIter = nan(lenSNR,numIter);
+    
+    for jj = 1:numIter
+        %Use the same message for each SNR
+        txBits = randi([0,1],numSyms,log2(M(ii)));  %Generate message bits
+        txMSG = bi2de(txBits,'left-msb');           %Transmitted message
+        tx = qammod(txMSG,M(ii));                   %Transmitted QAM signal
+
+        for kk = 1:lenSNR    
+            txChan = filter(chan,1,tx);                     %Apply the channel
+            
+            %Note that the built awgn does not add complex noise for BPSK
+            %and thus causes issues
+            if(M(ii) == 2)
+                noise = sqrt(varN(kk)/2)*(randn(numSyms,1)+1j*randn(numSyms,1));
+                txNoisy = txChan + noise;                       %Add noise
+            else
+                txNoisy = awgn(txChan,SNRdB(kk),'measured');    %Add noise
+            end
+            
+            rxMSG = qamdemod(txNoisy,M(ii));                %Received message
+            rxBits = de2bi(rxMSG,log2(M(ii)),'left-msb');   %Received bits
+
+            [~,berIter(kk,jj)] = biterr(txBits,rxBits);     %Calculate BER
+            serIter(kk,jj) = sum(txMSG ~= rxMSG)/numSyms;   %Calculate SER
+        end
+        waitbar(jj/numIter,bar)
+    end
+    
+    berSim = mean(berIter,2);       %Average BER for each simulated SNR
+    serSim = mean(serIter,2);       %Average SER for each simulated SNR
+    
+    %Theoretical BER and SER curves
+    if(M(ii) == 2)
+        %BPSK
+        EbNo = 10.^(EbNodB/10);
+        berTh = qfunc(sqrt(2*EbNo));
+        serTh = berTh;
+    else
+        %General QAM
+        [berTh,serTh] = berawgn(EbNodB,'qam',M(ii));
+        %Note: For non rectangular qam configurations the theoretical and
+        %simulation BER curves do not match up. I believe this is because
+        %either there is a term missing in the SNR to EbNo mapping at the 
+        %top of the code or (what I think is more likely) the berawgn 
+        %function does not properly account for decision boundaries in the 
+        %non-rectangular QAM configurations. So this would be for 32*4*k 
+        %QAM sizes where k is a natural number. Note this refers to the QAM
+        %constellations used by the qammod function.
+    end
+    
+    subplot(2,length(M),ii)
+    semilogy(SNRdB,berTh,'Linewidth',2)
+    hold on;
+    semilogy(SNRdB,berSim,'REPLACE_WITH_DASH_DASHx','Linewidth',2,'MarkerSize',10)
+    xlabel('SNR (dB)')
+    ylabel('BER')
+    title([num2str(M(ii)), ' QAM: Bit Error Rate'])
+    legend('Theoretical','Simulation')
+    grid on
+    
+    subplot(2,length(M),length(M)+ii)
+    semilogy(SNRdB,serTh,'Linewidth',2)
+    hold on;
+    semilogy(SNRdB,serSim,'REPLACE_WITH_DASH_DASHx','Linewidth',2,'MarkerSize',10)
+    xlabel('SNR (dB)')
+    ylabel('SER')
+    title([num2str(M(ii)), ' QAM: Symbol Error Rate'])
+    legend('Theoretical','Simulation')
+    grid on
+    
+    close(bar)
+end
+sgtitle('BER and SER for Various Size QAM')
+
+%% Part 1: BPSK with moderate ISI channel
+%For a moderate ISI channel using BPSK introduce BPSK to bring down the BER
+%Note: For BPSK BER and SER are the same, hence one plot
+
+numIter = 5e2;                          %Number of iterations
+numSyms = 1e3;                          %Number of symbols per iteration
+SNRdB = 0:2:12;                         %SNRs to use in dB
+varN = 10.^(-SNRdB/10);                 %Noise variance for BPSK
+lenSNR = length(SNRdB);                 %Number of SNRs to test
+M = 2;                                  %BPSK
+trainLen = 1e2;                         %Number of training symbols
+chan = [1, .2, .4];                     %Moderate ISI channel
+
+%Bit error rate for each SNR and iteration
+berNone  = nan(lenSNR,numIter);         %No ISI
+berModUn = nan(lenSNR,numIter);         %Moderate ISI, unequalized channel
+ber2 = nan(lenSNR,numIter);             %Moderate ISI, equalized channel
+
+%Run the simulation
+bar = waitbar(0,'Moderate ISI');
+for ii = 1:numIter
+    %Use the same message for each SNR
+    txBits = randi([0,1],numSyms,log2(M));  %Generate message bits
+    txMSG = bi2de(txBits,'left-msb');       %Transmitted message
+    tx = qammod(txMSG,M);                   %Transmitted QAM signal
+
+    for jj = 1:lenSNR
+        %No ISI
+        txChan = tx;                                    %Apply the channel
+        noise = sqrt(varN(jj)/2)*(randn(numSyms,1)+1j*randn(numSyms,1));
+        txNoisy = txChan + noise;                       %Add noise
+        rxMSG = qamdemod(txNoisy,M);                    %Received message
+        rxBits = de2bi(rxMSG,log2(M),'left-msb');       %Received bits
+        
+        [~,berNone(jj,ii)] = biterr(txBits,rxBits);     %Calculate BER
+        
+        %Moderate ISI, unequalized channel
+        txChan = filter(chan,1,tx);                     %Apply the channel
+        noise = sqrt(varN(jj)/2)*(randn(numSyms,1)+1j*randn(numSyms,1));
+        txNoisy = txChan + noise;                       %Add noise
+        rxMSG = qamdemod(txNoisy,M);                    %Received message
+        rxBits = de2bi(rxMSG,log2(M),'left-msb');       %Received bits
+        
+        [~,berModUn(jj,ii)] = biterr(txBits,rxBits);    %Calculate BER
+        
+        %Moderate ISI, equalized channel
+        %Use the same txNosiy as in the unequalized channel and use an
+        %equalizer. Using the same txNoisy gives a direct performance
+        %comparison.
+        eq1 = dfe(1,2,lms(1e-2));                       %Equalizer
+        eq1.SigConst = qammod(0:(M-1),M);               %Set constellation
+        rxEq = equalize(eq1,txNoisy,tx(1:trainLen));    %Received eq signal
+        rxMSG = qamdemod(rxEq,M);                       %Received message
+        rxBits = de2bi(rxMSG,log2(M),'left-msb');       %Received bits
+        
+        [~,ber2(jj,ii)] = biterr(txBits(trainLen+1:end,:),...
+            rxBits(trainLen+1:end,:));                    %Calculate BER
+    end
+    waitbar(ii/numIter,bar)
+end
+close(bar)
+
+%Average the BER curves
+berNone  = mean(berNone,2);
+berModUn = mean(berModUn,2);
+ber2 = mean(ber2,2);
+
+%Theoretical BER for BPSK no ISI
+berTh = qfunc(sqrt(2*10.^(SNRdB/10)));              
+
+figure('units','normalized','outerposition',[0,0,1,1])
+semilogy(SNRdB,berTh,'Linewidth',2)
+hold on
+semilogy(SNRdB,berNone,'REPLACE_WITH_DASH_DASHx','Linewidth',2,'MarkerSize',10)
+semilogy(SNRdB,berModUn,'REPLACE_WITH_DASH_DASHx','Linewidth',2,'MarkerSize',10)
+semilogy(SNRdB,ber2,'REPLACE_WITH_DASH_DASHx','Linewidth',2,'MarkerSize',10)
+legend('No ISI Theory','No ISI Simulation','Moderate ISI Un','Moderate ISI Eq')
+title('BER Curves for a Moderate ISI Channel')
+xlabel('SNR (dB)')
+ylabel('BER')
+grid on
+
+%% Part 2: BER of 1e-6 at SNR of 12dB in a moderate ISI channel
+
+numIter = 4e3;                          %Number of iterations
+numSyms = 1e3;                          %Number of symbols per iteration
+SNRdB = 0:2:12;                         %SNRs to use in dB
+varN = 10.^(-SNRdB/10);                 %Noise variance for BPSK
+lenSNR = length(SNRdB);                 %Number of SNRs to test
+k = 1;                                  %Number of info bits
+n = 2;                                  %Number of output bits from encoder
+M = 2^n;                                %M QAM
+trainLen = 3e2;                         %Number of training symbols
+fftaps = 1;                             %Number of feed forward taps in eq
+fbtaps = 2;                             %Number of feed back raps in eq
+trellis = poly2trellis([9],[561,753]);  %Rate 1/2 convolutional encoder
+chan = [1, .2, .4];                     %Moderate ISI channel
+
+%Bit error rate for each SNR and iteration
+ber2 = nan(lenSNR,numIter);             %BER for part 2
+
+%Run the simulation
+bar = waitbar(0,'Moderate ISI');
+for ii = 1:numIter
+    %Use the same message for each SNR
+    txBits = randi([0,1],k,numSyms);        %Generate message bits
+    txBits = reshape(txBits,1,[]);
+    
+    msgBits = convenc(txBits,trellis);      %Encode the data
+    msgBits = reshape(msgBits,n,numSyms)';  
+    txMSG = bi2de(msgBits,'left-msb');      %Transmitted message
+    tx = qammod(txMSG,M);                   %Transmitted QAM signal
+
+    for jj = 1:lenSNR
+        %Moderate ISI, unequalized channel
+        txChan = filter(chan,1,tx);                     %Apply the channel
+        
+        if(M == 2)
+            noise = sqrt(varN(jj)/2)*(randn(numSyms,1)+1j*randn(numSyms,1));
+            txNoisy = txChan + noise;                       %Add noise
+        else
+            txNoisy = awgn(txChan,SNRdB(jj),'measured');    %Add noise
+        end
+
+        eq1 = dfe(fftaps,fbtaps,lms(1e-2));             %Equalizer
+        eq1.SigConst = qammod(0:(M-1),M);               %Set constellation
+        rxEq = equalize(eq1,txNoisy,tx(1:trainLen));    %Received eq signal
+        
+        rxMSG = qamdemod(rxEq,M);                       %Received message
+        rxBits = de2bi(rxMSG,log2(M),'left-msb');       %Received bits
+        rxBits = reshape(rxBits',1,[]);
+        decBits = vitdec(rxBits,trellis,numSyms,'trunc','hard');
+        
+        ind = k*trainLen+1;     %k due to the ECC
+        [~,ber2(jj,ii)] = biterr(txBits(ind:end),...
+            decBits(ind:end));                          %Calculate BER
+    end
+    waitbar(ii/numIter,bar)
+end
+close(bar)
+
+%Average the BER curve
+ber2 = mean(ber2,2);
+
+%Theoretical BER for BPSK no ISI
+berTh = qfunc(sqrt(2*10.^(SNRdB/10)));              
+
+figure('units','normalized','outerposition',[0,0,1,1])
+semilogy(SNRdB,berTh,'Linewidth',2)
+hold on
+semilogy(SNRdB,ber2,'REPLACE_WITH_DASH_DASHx','Linewidth',2,'MarkerSize',10)
+legend('No ISI Theory','Moderate ISI: Equalization + ECC')
+title('BER Curves for a Moderate ISI Channel')
+xlabel('SNR (dB)')
+ylabel('BER')
+grid on
+
+
+
+
+
+
+
+
+##### SOURCE END #####
+--></body></html>
