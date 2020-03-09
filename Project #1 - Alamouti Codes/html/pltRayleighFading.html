@@ -1,0 +1,179 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>pltRayleighFading</title><meta name="generator" content="MATLAB 9.7"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2020-03-02"><meta name="DC.source" content="pltRayleighFading.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><pre class="codeinput"><span class="keyword">function</span> pltRayleighFading(T,fD,Npt)
+<span class="comment">%{
+</span><span class="comment">Plots a random rayleigh fading envelope of duration T generated using Fig.
+</span><span class="comment">5.24 from Rapaport and the 7 associated steps.
+</span><span class="comment">
+</span><span class="comment">Inputs:
+</span><span class="comment">    T   : (1, ) Duration of Rayleigh fading envelope
+</span><span class="comment">    fD  : (1, ) Maximum doppler frequency
+</span><span class="comment">    Npt : (1, ) Multiply IFFT size by this amount
+</span><span class="comment">
+</span><span class="comment">Outputs:
+</span><span class="comment">    A graph of the rayleigh fading envelope.
+</span><span class="comment">%}
+</span>
+<span class="comment">%First we need to get the appropiate amount of points</span>
+delF = 1/T;             <span class="comment">%Frequency spacing</span>
+N  = 2*fD/delF + 1;     <span class="comment">%N point rayleigh fading envelope</span>
+
+<span class="keyword">if</span>(mod(N,1) ~= 0)
+    error(<span class="string">'Choose fD and T such that 2*fD*T is an integer'</span>)
+<span class="keyword">end</span>
+
+<span class="comment">%Clarke spectrum of length N</span>
+[~,S] = clarkeSpec(N,fD);
+
+<span class="comment">%Generate 2 sets of random gaussian samples</span>
+gSamps = sqrt(1/2)*(randn(ceil(N/2),2)+1j*randn(ceil(N/2),2));
+
+<span class="comment">%Apply the conjugate symmetry</span>
+<span class="keyword">if</span>(mod(N,2) == 1)
+    <span class="comment">%N odd</span>
+    g = [conj(flipud(gSamps(2:end,:))); gSamps];
+<span class="keyword">else</span>
+    <span class="comment">%N even</span>
+    g = [conj(flipud(gSamps)); gSamps];
+<span class="keyword">end</span>
+
+b4ifft = g.*repmat(sqrt(S),1,2);                <span class="comment">%Multiply by square root of Clarke Spectrum</span>
+postifft = ifft(ifftshift(b4ifft),N*Npt,1).^2;  <span class="comment">%Take IFFT and square it</span>
+r = abs(sqrt(sum(postifft,2)));                 <span class="comment">%Add the two branches and take absolute value to get envelope</span>
+r = r/mean(r);                                  <span class="comment">%Divide by mean so average 0 dB power</span>
+
+t = linspace(0,T,N*Npt);                        <span class="comment">%Time axis</span>
+
+<span class="comment">%Plotting</span>
+figure
+plot(t,10*log10(r),<span class="string">'Linewidth'</span>,2)
+title([<span class="string">'Rayleigh Fading Envelope (f_D = '</span>, num2str(fD),<span class="string">' Hz)'</span>])
+xlabel(<span class="string">'Elapsed Time (s)'</span>)
+ylabel(<span class="string">'Signal Level (dB)'</span>)
+xlim([0,T])
+grid <span class="string">on</span>
+</pre><p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2019b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+function pltRayleighFading(T,fD,Npt)
+%{
+Plots a random rayleigh fading envelope of duration T generated using Fig.
+5.24 from Rapaport and the 7 associated steps.
+
+Inputs:
+    T   : (1, ) Duration of Rayleigh fading envelope
+    fD  : (1, ) Maximum doppler frequency
+    Npt : (1, ) Multiply IFFT size by this amount
+
+Outputs:
+    A graph of the rayleigh fading envelope.
+%}
+
+%First we need to get the appropiate amount of points
+delF = 1/T;             %Frequency spacing
+N  = 2*fD/delF + 1;     %N point rayleigh fading envelope
+
+if(mod(N,1) ~= 0)
+    error('Choose fD and T such that 2*fD*T is an integer')
+end
+
+%Clarke spectrum of length N
+[~,S] = clarkeSpec(N,fD);
+
+%Generate 2 sets of random gaussian samples
+gSamps = sqrt(1/2)*(randn(ceil(N/2),2)+1j*randn(ceil(N/2),2));
+
+%Apply the conjugate symmetry
+if(mod(N,2) == 1)
+    %N odd
+    g = [conj(flipud(gSamps(2:end,:))); gSamps];
+else
+    %N even
+    g = [conj(flipud(gSamps)); gSamps];
+end
+
+b4ifft = g.*repmat(sqrt(S),1,2);                %Multiply by square root of Clarke Spectrum
+postifft = ifft(ifftshift(b4ifft),N*Npt,1).^2;  %Take IFFT and square it
+r = abs(sqrt(sum(postifft,2)));                 %Add the two branches and take absolute value to get envelope
+r = r/mean(r);                                  %Divide by mean so average 0 dB power
+
+t = linspace(0,T,N*Npt);                        %Time axis
+
+%Plotting
+figure
+plot(t,10*log10(r),'Linewidth',2)
+title(['Rayleigh Fading Envelope (f_D = ', num2str(fD),' Hz)'])
+xlabel('Elapsed Time (s)')
+ylabel('Signal Level (dB)')
+xlim([0,T])
+grid on
+
+
+
+##### SOURCE END #####
+--></body></html>
