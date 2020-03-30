@@ -1,0 +1,365 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>main</title><meta name="generator" content="MATLAB 9.7"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2020-03-29"><meta name="DC.source" content="main.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><h2>Contents</h2><div><ul><li><a href="#3">Now time for some plots</a></li></ul></div><pre class="codeinput"><span class="comment">%Karol Wadolowski, Project #2: CDMA</span>
+clear; clc; close <span class="string">all</span>;
+</pre><pre class="codeinput">load(<span class="string">'Rcvd_Wadolowski.mat'</span>)
+
+<span class="comment">%Get the Walsh orthogonal codes</span>
+walsh = hadamard(8);
+w0 = walsh(1,:);        <span class="comment">%Walsh orthogonal code 0</span>
+w5 = walsh(5,:);        <span class="comment">%Walsh orthogonal code 5</span>
+
+lenR = length(Rcvd);                    <span class="comment">%Number of samples</span>
+frames = lenR/(4*255);                  <span class="comment">%Get the number of frames sent</span>
+rrcFilt = rcosdesign(.75,6,4,<span class="string">'sqrt'</span>);   <span class="comment">%Get the Root Raised Cosine filter</span>
+rFiltered = conv(Rcvd,rrcFilt,<span class="string">'same'</span>);  <span class="comment">%Filter the received signal</span>
+rcvd4 = rFiltered(1:4:lenR);            <span class="comment">%Take every fourth sample</span>
+
+<span class="comment">%Find and generate the correct PN sequence. To do this the initial state of</span>
+<span class="comment">%the LFSR has to be found. Applying the PN of the correct initial state</span>
+<span class="comment">%will maximize mean distance from the origin of the initial frame</span>
+maxVal = -inf;                          <span class="comment">%Current maxVal</span>
+maxState = zeros(1,8);                  <span class="comment">%State corresponding to this value</span>
+pilotDist = nan(1,255);                 <span class="comment">%Mean distance from origin for each</span>
+                                        <span class="comment">%init state</span>
+<span class="keyword">for</span> ii = 1:255
+    <span class="comment">%Loop through all possible initial states of LFSR</span>
+    state = de2bi(ii,8,<span class="string">'left-msb'</span>);
+    seq = lfsrSeq([8,7,6,1],state,255);
+    seq = 2*seq - 1;
+
+    <span class="comment">%Apply the PN sequence to the pilot samples</span>
+    temp = rcvd4(1:255).*seq;
+
+    <span class="comment">%Check if this initial state is the best one so far</span>
+    pilotDist(ii) = abs(mean(temp));
+
+    <span class="keyword">if</span>(pilotDist(ii) &gt; maxVal)
+        <span class="comment">%If best so far save value and state</span>
+        maxVal = pilotDist(ii);
+        maxState = state;
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+
+init = maxState;                        <span class="comment">%Initial state of LFSR</span>
+seq = lfsrSeq([8,7,6,1],init,lenR/4);   <span class="comment">%PN sequence</span>
+seq = 2*seq - 1;                        <span class="comment">%Correspond bits to BPSK</span>
+
+rPN = rcvd4.*seq;                       <span class="comment">%Undo the PN sequence</span>
+
+<span class="comment">%Get rid of the zero fill samples</span>
+temp = reshape(rPN,255,[]);             <span class="comment">%Reshape for convenience</span>
+infoSamps = temp(1:192,:).';            <span class="comment">%Get rid of zero fill</span>
+<span class="comment">%InfoVals is all the samples containing the pilot and data information.</span>
+<span class="comment">%Each row contains the 192 information samples from a frame.</span>
+
+<span class="comment">%Obtain the spread pilot and data components from the information samples</span>
+pilot = repmat(w0,frames,24).*infoSamps;
+data  = repmat(w5,frames,24).*infoSamps;
+
+<span class="comment">%Need to aquire the phase of the pilot bits for each frame in order to</span>
+<span class="comment">%decode the data stream correctly. This will also handle the frequency</span>
+<span class="comment">%offset.</span>
+phases = angle(mean(pilot,2));
+
+<span class="comment">%Adjust the phase of the information values</span>
+corInfoSamps = infoSamps.*repmat(exp(-1j*phases),1,192);
+corInfoSamps = reshape(corInfoSamps.',8,[]);
+
+<span class="comment">%Perform inner products of groups of 8 bits with the Walsh codes to get the</span>
+<span class="comment">%pilot and data streams. Divide by 8 to normalize.</span>
+iwPilot = w0*corInfoSamps/8;
+iwData  = w5*corInfoSamps/8;
+
+<span class="comment">%Decode the data stream and convert to ascii</span>
+decData = reshape(real(iwData),8,[])' &lt; 0;
+decData = bi2de(decData,<span class="string">'right-msb'</span>)';
+
+<span class="comment">%Don't include first and last frame as those have no actaual data</span>
+message = char(decData(4:(end-3)))
+
+<span class="comment">%Now to correspond the phase changes to a frequency offset</span>
+chipRate = 1e6;
+frameRate = chipRate/255;
+unPhases = unwrap(phases.');    <span class="comment">%Unwrapped phase</span>
+diffPh = diff(unPhases);        <span class="comment">%Phase difference among adjacent frames</span>
+
+<span class="comment">%Approximate frequency using df/dt = 1/(2pi) dtheta/dt</span>
+freqOffset = mean(diffPh)*frameRate/(2*pi);
+fprintf([<span class="string">'\nFor a chip rate of 1e6 MHz, the frequency offset is '</span>,<span class="keyword">...</span>
+    num2str(freqOffset),<span class="string">' Hz\n'</span>]);
+</pre><pre class="codeoutput">message =
+    'It's such a magical mysteria, When you get that feelin', better start believin'
+
+For a chip rate of 1e6 MHz, the frequency offset is 240.9614 Hz
+</pre><h2 id="3">Now time for some plots</h2><pre class="codeinput">figure(<span class="string">'units'</span>,<span class="string">'normalized'</span>,<span class="string">'outerposition'</span>,[0,0,1,1])
+subplot(1,2,1)
+scatter(real(rcvd4),imag(rcvd4))
+xlim([-2,2]);   ylim([-2,2]);   grid <span class="string">on</span>;    daspect([1 1 1]);
+title(<span class="string">'Received Samples Before Undoing PN Sequence'</span>)
+
+subplot(1,2,2)
+scatter(real(rPN),imag(rPN))
+xlim([-2,2]);   ylim([-2,2]);   grid <span class="string">on</span>;    daspect([1 1 1]);
+title(<span class="string">'Received Samples After Undoing PN Sequence'</span>)
+
+figure(<span class="string">'units'</span>,<span class="string">'normalized'</span>,<span class="string">'outerposition'</span>,[0,0,1,1])
+stem(1:255,pilotDist)
+xlim([1,255]);  ylim([0,ceil(max(pilotDist))]); grid <span class="string">on</span>;
+xlabel(<span class="string">'LFSR Initial State (Left-MSB)'</span>)
+ylabel(<span class="string">'Mean Distance from Origin'</span>)
+title(<span class="string">'Mean Distance of Initial Frame after Applying PN Sequence'</span>)
+
+p1 = mean(reshape(pilot.',8,[]));
+d1 = mean(reshape(data.',8,[]));
+figure(<span class="string">'units'</span>,<span class="string">'normalized'</span>,<span class="string">'outerposition'</span>,[0,0,1,1])
+subplot(1,2,1)
+scatter(real(p1),imag(p1))
+xlim([-2,2]);   ylim([-2,2]);   grid <span class="string">on</span>;    daspect([1 1 1]);
+title(<span class="string">'Pilot'</span>)
+
+subplot(1,2,2)
+scatter(real(d1),imag(d1))
+xlim([-2,2]);   ylim([-2,2]);   grid <span class="string">on</span>;    daspect([1 1 1]);
+title(<span class="string">'Data'</span>)
+sgtitle(<span class="string">'Before Phase Adjustment'</span>)
+
+figure(<span class="string">'units'</span>,<span class="string">'normalized'</span>,<span class="string">'outerposition'</span>,[0,0,1,1])
+subplot(1,2,1)
+scatter(real(iwPilot),imag(iwPilot))
+xlim([-2,2]);   ylim([-2,2]);   grid <span class="string">on</span>;    daspect([1 1 1]);
+title(<span class="string">'Pilot'</span>)
+
+subplot(1,2,2)
+scatter(real(iwData),imag(iwData))
+xlim([-2,2]);   ylim([-2,2]);   grid <span class="string">on</span>;    daspect([1 1 1]);
+title(<span class="string">'Data'</span>)
+sgtitle(<span class="string">'After Phase Adjustment'</span>)
+
+figure(<span class="string">'units'</span>,<span class="string">'normalized'</span>,<span class="string">'outerposition'</span>,[0,0,1,1])
+plot(1:frames,phases,<span class="string">'-x'</span>,<span class="string">'Linewidth'</span>,2)
+hold <span class="string">on</span>;
+plot(1:frames,unPhases,<span class="string">'-x'</span>,<span class="string">'Linewidth'</span>,2)
+legend(<span class="string">'Wrapped'</span>,<span class="string">'Unwrapped'</span>,<span class="string">'Location'</span>,<span class="string">'NorthWest'</span>)
+xlabel(<span class="string">'Frame'</span>)
+ylabel(<span class="string">'Phase Offset (rad)'</span>)
+title(<span class="string">'Phase Offset Present In Each Frame'</span>)
+grid <span class="string">on</span>
+</pre><img vspace="5" hspace="5" src="main_01.png" alt=""> <img vspace="5" hspace="5" src="main_02.png" alt=""> <img vspace="5" hspace="5" src="main_03.png" alt=""> <img vspace="5" hspace="5" src="main_04.png" alt=""> <img vspace="5" hspace="5" src="main_05.png" alt=""> <p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2019b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%Karol Wadolowski, Project #2: CDMA
+clear; clc; close all;
+
+%%
+load('Rcvd_Wadolowski.mat')
+
+%Get the Walsh orthogonal codes
+walsh = hadamard(8);
+w0 = walsh(1,:);        %Walsh orthogonal code 0
+w5 = walsh(5,:);        %Walsh orthogonal code 5
+
+lenR = length(Rcvd);                    %Number of samples
+frames = lenR/(4*255);                  %Get the number of frames sent
+rrcFilt = rcosdesign(.75,6,4,'sqrt');   %Get the Root Raised Cosine filter
+rFiltered = conv(Rcvd,rrcFilt,'same');  %Filter the received signal
+rcvd4 = rFiltered(1:4:lenR);            %Take every fourth sample
+
+%Find and generate the correct PN sequence. To do this the initial state of
+%the LFSR has to be found. Applying the PN of the correct initial state
+%will maximize mean distance from the origin of the initial frame
+maxVal = -inf;                          %Current maxVal
+maxState = zeros(1,8);                  %State corresponding to this value
+pilotDist = nan(1,255);                 %Mean distance from origin for each
+                                        %init state
+for ii = 1:255
+    %Loop through all possible initial states of LFSR
+    state = de2bi(ii,8,'left-msb');
+    seq = lfsrSeq([8,7,6,1],state,255);
+    seq = 2*seq - 1;
+    
+    %Apply the PN sequence to the pilot samples
+    temp = rcvd4(1:255).*seq;
+    
+    %Check if this initial state is the best one so far
+    pilotDist(ii) = abs(mean(temp));
+    
+    if(pilotDist(ii) > maxVal)
+        %If best so far save value and state
+        maxVal = pilotDist(ii);
+        maxState = state;
+    end
+end
+       
+init = maxState;                        %Initial state of LFSR
+seq = lfsrSeq([8,7,6,1],init,lenR/4);   %PN sequence
+seq = 2*seq - 1;                        %Correspond bits to BPSK
+
+rPN = rcvd4.*seq;                       %Undo the PN sequence
+
+%Get rid of the zero fill samples
+temp = reshape(rPN,255,[]);             %Reshape for convenience 
+infoSamps = temp(1:192,:).';            %Get rid of zero fill
+%InfoVals is all the samples containing the pilot and data information.
+%Each row contains the 192 information samples from a frame.
+
+%Obtain the spread pilot and data components from the information samples
+pilot = repmat(w0,frames,24).*infoSamps;
+data  = repmat(w5,frames,24).*infoSamps;
+
+%Need to aquire the phase of the pilot bits for each frame in order to
+%decode the data stream correctly. This will also handle the frequency
+%offset.
+phases = angle(mean(pilot,2));      
+
+%Adjust the phase of the information values 
+corInfoSamps = infoSamps.*repmat(exp(-1j*phases),1,192);
+corInfoSamps = reshape(corInfoSamps.',8,[]);
+
+%Perform inner products of groups of 8 bits with the Walsh codes to get the
+%pilot and data streams. Divide by 8 to normalize.
+iwPilot = w0*corInfoSamps/8;
+iwData  = w5*corInfoSamps/8;
+
+%Decode the data stream and convert to ascii
+decData = reshape(real(iwData),8,[])' < 0;
+decData = bi2de(decData,'right-msb')';
+
+%Don't include first and last frame as those have no actaual data
+message = char(decData(4:(end-3)))
+
+%Now to correspond the phase changes to a frequency offset
+chipRate = 1e6;
+frameRate = chipRate/255;
+unPhases = unwrap(phases.');    %Unwrapped phase
+diffPh = diff(unPhases);        %Phase difference among adjacent frames
+
+%Approximate frequency using df/dt = 1/(2pi) dtheta/dt
+freqOffset = mean(diffPh)*frameRate/(2*pi);
+fprintf(['\nFor a chip rate of 1e6 MHz, the frequency offset is ',...
+    num2str(freqOffset),' Hz\n']);
+
+%% Now time for some plots
+figure('units','normalized','outerposition',[0,0,1,1])
+subplot(1,2,1)
+scatter(real(rcvd4),imag(rcvd4))
+xlim([-2,2]);   ylim([-2,2]);   grid on;    daspect([1 1 1]);
+title('Received Samples Before Undoing PN Sequence')
+
+subplot(1,2,2)
+scatter(real(rPN),imag(rPN))
+xlim([-2,2]);   ylim([-2,2]);   grid on;    daspect([1 1 1]);
+title('Received Samples After Undoing PN Sequence')
+
+figure('units','normalized','outerposition',[0,0,1,1])
+stem(1:255,pilotDist)
+xlim([1,255]);  ylim([0,ceil(max(pilotDist))]); grid on;
+xlabel('LFSR Initial State (Left-MSB)')
+ylabel('Mean Distance from Origin')
+title('Mean Distance of Initial Frame after Applying PN Sequence')
+
+p1 = mean(reshape(pilot.',8,[]));
+d1 = mean(reshape(data.',8,[]));
+figure('units','normalized','outerposition',[0,0,1,1])
+subplot(1,2,1)
+scatter(real(p1),imag(p1))
+xlim([-2,2]);   ylim([-2,2]);   grid on;    daspect([1 1 1]);
+title('Pilot')
+
+subplot(1,2,2)
+scatter(real(d1),imag(d1))
+xlim([-2,2]);   ylim([-2,2]);   grid on;    daspect([1 1 1]);
+title('Data')
+sgtitle('Before Phase Adjustment')
+
+figure('units','normalized','outerposition',[0,0,1,1])
+subplot(1,2,1)
+scatter(real(iwPilot),imag(iwPilot))
+xlim([-2,2]);   ylim([-2,2]);   grid on;    daspect([1 1 1]);
+title('Pilot')
+
+subplot(1,2,2)
+scatter(real(iwData),imag(iwData))
+xlim([-2,2]);   ylim([-2,2]);   grid on;    daspect([1 1 1]);
+title('Data')
+sgtitle('After Phase Adjustment')
+
+figure('units','normalized','outerposition',[0,0,1,1])
+plot(1:frames,phases,'-x','Linewidth',2)
+hold on;
+plot(1:frames,unPhases,'-x','Linewidth',2)
+legend('Wrapped','Unwrapped','Location','NorthWest')
+xlabel('Frame')
+ylabel('Phase Offset (rad)')
+title('Phase Offset Present In Each Frame')
+grid on
+
+
+
+##### SOURCE END #####
+--></body></html>
