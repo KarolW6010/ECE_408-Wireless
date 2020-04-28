@@ -1,0 +1,350 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>bestOFDMconfig</title><meta name="generator" content="MATLAB 9.7"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2020-04-23"><meta name="DC.source" content="bestOFDMconfig.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><pre class="codeinput"><span class="keyword">function</span> [M,Rst,DRs,mmseBERs,zfBERs] = bestOFDMconfig(channel,N,SNRdB,<span class="keyword">...</span>
+    targBER,prnt)
+<span class="comment">%{
+</span><span class="comment">Finds the highest data rate OFDM system configuration using either a MMSE
+</span><span class="comment">or Zero-Forcing equalizer.
+</span><span class="comment">
+</span><span class="comment">Inputs:
+</span><span class="comment">    channel     : (D, ) Channel that the signal will go through
+</span><span class="comment">    N           : (1, ) Generate N OFDM symbols
+</span><span class="comment">    SNRdB       : (1, ) SNR of the channel
+</span><span class="comment">    targBER     : (1, ) Target BER value
+</span><span class="comment">    prnt        : (1, ) Print all configurations (true or false)
+</span><span class="comment">
+</span><span class="comment">Outputs:
+</span><span class="comment">    M           : (4, ) The 4 possible QAMs
+</span><span class="comment">    Rst         : (3, ) Strings of the 3 possible rates
+</span><span class="comment">    DRs         : (4,3) Possible data rates for each combo of M and R
+</span><span class="comment">    mmseBERs    : (4,3) MMSE BER for each combo of M and R
+</span><span class="comment">    zfBERs      : (4,3) Analogous to above
+</span><span class="comment">
+</span><span class="comment">    if(prnt)
+</span><span class="comment">    Lists all configurations that can reach the target BER at the given
+</span><span class="comment">    SNR. Also displays the best configuration.
+</span><span class="comment">%}
+</span>
+SPS = 2.5e5;                <span class="comment">%Symbols per second in 802.11a</span>
+
+D = length(channel);        <span class="comment">%Channel length</span>
+M = [2,4,16,64];            <span class="comment">%M-ary QAM types</span>
+R = [1/2,2/3,3/4];          <span class="comment">%ECC rates</span>
+Rst = {<span class="string">'1/2'</span>,<span class="string">'2/3'</span>,<span class="string">'3/4'</span>};
+
+DRs = nan(4,3);
+mmseBERs = nan(4,3);
+zfBERs = nan(4,3);
+
+berMMSEbest = 1;
+berZFbest = 1;
+DRbestMMSE = 0;
+DRbestZF = 0;
+mmseBest = false;
+zfBest = false;
+
+<span class="keyword">if</span>(prnt)
+fprintf(<span class="string">'Target BER = %.0e, SNR = %.1f dB, %.1e Symbols used\n'</span>,<span class="keyword">...</span>
+    targBER,SNRdB,N)
+<span class="keyword">end</span>
+<span class="keyword">for</span> ii = 1:length(M)
+    <span class="keyword">for</span> jj = 1:length(R)
+        <span class="comment">%Generate OFDM symbol</span>
+        [DataBits,sym] = OFDMsymGen(N,R(jj),M(ii));
+
+        <span class="comment">%Apply the channel</span>
+        txChan = filter(channel,[1],sym);
+        <span class="comment">%txChan = txChan(D:end);</span>
+
+        <span class="comment">%Add noise</span>
+        sigPower = mean(abs(txChan).^2);
+        noiseVar = sigPower*10^(-SNRdB/10);
+        noise = sqrt(noiseVar/2)*<span class="keyword">...</span>
+            (randn(length(txChan),1) + 1j*randn(length(txChan),1));
+        rx = txChan + noise;
+
+        <span class="comment">%Perform equalization</span>
+        symMMSE = filter([1],channel+noiseVar.*eye(size(channel)),rx);
+        symZF = filter([1],channel,rx);
+
+        <span class="comment">%Decode OFDM Symbol</span>
+        DecBitsMMSE = OFDMdemod(symMMSE,R(jj),M(ii));
+        DecBitsZF = OFDMdemod(symZF,R(jj),M(ii));
+
+        <span class="comment">%Calculate BER</span>
+        berMMSE = mean(DecBitsMMSE ~= DataBits);
+        berZF = mean(DecBitsZF ~= DataBits);
+
+        <span class="comment">%Calculate Data Rate in Mbps</span>
+        DR = 48*R(jj)*log2(M(ii))*SPS/1e6;
+
+        DRs(ii,jj) = DR;
+        mmseBERs(ii,jj) = berMMSE;
+        zfBERs(ii,jj) = berZF;
+
+        <span class="comment">%Check if the target is met</span>
+        <span class="keyword">if</span>(berMMSE &lt; targBER)
+            <span class="keyword">if</span>(DR &gt; DRbestMMSE)
+                statMMSE = <span class="string">'Target Met'</span>;
+                berMMSEbest = berMMSE;
+                MbestMMSE = M(ii);
+                RbestMMSE = Rst{jj};
+                DRbestMMSE = DR;
+                mmseBEST = true;
+            <span class="keyword">end</span>
+        <span class="keyword">else</span>
+            <span class="keyword">if</span>((berMMSE &lt; berMMSEbest) &amp;&amp; ~mmseBest)
+                statMMSE = <span class="string">'Target Not Met'</span>;
+                berMMSEbest = berMMSE;
+                MbestMMSE = M(ii);
+                RbestMMSE = Rst{jj};
+                DRbestMMSE = DR;
+            <span class="keyword">end</span>
+        <span class="keyword">end</span>
+        <span class="keyword">if</span>(berZF &lt; targBER)
+            <span class="keyword">if</span>(DR &gt; DRbestZF)
+                statZF = <span class="string">'Target Met'</span>;
+                berZFbest = berZF;
+                MbestZF = M(ii);
+                RbestZF = Rst{jj};
+                DRbestZF = DR;
+                zfBest = true;
+            <span class="keyword">end</span>
+        <span class="keyword">else</span>
+            <span class="keyword">if</span>((berZF &lt; berZFbest) &amp;&amp; ~zfBest)
+                statZF = <span class="string">'Target Not Met'</span>;
+                berZFbest = berZF;
+                MbestZF = M(ii);
+                RbestZF = Rst{jj};
+                DRbestZF = DR;
+            <span class="keyword">end</span>
+        <span class="keyword">end</span>
+
+        <span class="comment">%Print Information</span>
+        <span class="keyword">if</span>(prnt)
+            fprintf([<span class="string">'%2d QAM, Rate %s, MMSE BER = %.2e, ZF BER = %.2e'</span>,<span class="keyword">...</span>
+            <span class="string">', Data Rate = %2.0f Mbps\n'</span>],M(ii),Rst{jj},berMMSE,berZF,DR)
+        <span class="keyword">end</span>
+
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+
+<span class="keyword">if</span>(prnt)
+    fprintf(<span class="string">'\n'</span>)
+    fprintf(<span class="string">'Best Configurations\n'</span>)
+    fprintf([<span class="string">'MMSE:\t %2d QAM, Rate %s, BER = %.2e, Data Rate = %2.0f Mbps'</span>,<span class="keyword">...</span>
+        <span class="string">', %s\n'</span>],MbestMMSE,RbestMMSE,berMMSEbest,DRbestMMSE,statMMSE)
+    fprintf([<span class="string">'ZF:\t\t %2d QAM, Rate %s, BER = %.2e, Data Rate = %2.0f Mbps'</span>,<span class="keyword">...</span>
+        <span class="string">', %s\n\n'</span>],MbestZF,RbestZF,berZFbest,DRbestZF,statZF)
+<span class="keyword">end</span>
+</pre><p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2019b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+function [M,Rst,DRs,mmseBERs,zfBERs] = bestOFDMconfig(channel,N,SNRdB,...
+    targBER,prnt)
+%{
+Finds the highest data rate OFDM system configuration using either a MMSE
+or Zero-Forcing equalizer.
+
+Inputs:
+    channel     : (D, ) Channel that the signal will go through
+    N           : (1, ) Generate N OFDM symbols
+    SNRdB       : (1, ) SNR of the channel
+    targBER     : (1, ) Target BER value
+    prnt        : (1, ) Print all configurations (true or false)
+
+Outputs:
+    M           : (4, ) The 4 possible QAMs
+    Rst         : (3, ) Strings of the 3 possible rates
+    DRs         : (4,3) Possible data rates for each combo of M and R
+    mmseBERs    : (4,3) MMSE BER for each combo of M and R
+    zfBERs      : (4,3) Analogous to above
+    
+    if(prnt)
+    Lists all configurations that can reach the target BER at the given
+    SNR. Also displays the best configuration.
+%}
+
+SPS = 2.5e5;                %Symbols per second in 802.11a
+
+D = length(channel);        %Channel length
+M = [2,4,16,64];            %M-ary QAM types
+R = [1/2,2/3,3/4];          %ECC rates
+Rst = {'1/2','2/3','3/4'};
+
+DRs = nan(4,3);
+mmseBERs = nan(4,3);
+zfBERs = nan(4,3);
+
+berMMSEbest = 1;
+berZFbest = 1;
+DRbestMMSE = 0;
+DRbestZF = 0;
+mmseBest = false;
+zfBest = false;
+
+if(prnt)
+fprintf('Target BER = %.0e, SNR = %.1f dB, %.1e Symbols used\n',...
+    targBER,SNRdB,N)
+end
+for ii = 1:length(M)
+    for jj = 1:length(R)
+        %Generate OFDM symbol
+        [DataBits,sym] = OFDMsymGen(N,R(jj),M(ii));
+        
+        %Apply the channel
+        txChan = filter(channel,[1],sym);
+        %txChan = txChan(D:end);
+        
+        %Add noise
+        sigPower = mean(abs(txChan).^2);
+        noiseVar = sigPower*10^(-SNRdB/10);
+        noise = sqrt(noiseVar/2)*...
+            (randn(length(txChan),1) + 1j*randn(length(txChan),1));
+        rx = txChan + noise;
+        
+        %Perform equalization
+        symMMSE = filter([1],channel+noiseVar.*eye(size(channel)),rx);
+        symZF = filter([1],channel,rx);
+        
+        %Decode OFDM Symbol
+        DecBitsMMSE = OFDMdemod(symMMSE,R(jj),M(ii));
+        DecBitsZF = OFDMdemod(symZF,R(jj),M(ii));
+        
+        %Calculate BER
+        berMMSE = mean(DecBitsMMSE ~= DataBits);
+        berZF = mean(DecBitsZF ~= DataBits);
+        
+        %Calculate Data Rate in Mbps
+        DR = 48*R(jj)*log2(M(ii))*SPS/1e6;      
+        
+        DRs(ii,jj) = DR;
+        mmseBERs(ii,jj) = berMMSE;
+        zfBERs(ii,jj) = berZF;
+        
+        %Check if the target is met
+        if(berMMSE < targBER)
+            if(DR > DRbestMMSE)
+                statMMSE = 'Target Met';
+                berMMSEbest = berMMSE;
+                MbestMMSE = M(ii);
+                RbestMMSE = Rst{jj};
+                DRbestMMSE = DR;
+                mmseBEST = true;
+            end
+        else
+            if((berMMSE < berMMSEbest) && ~mmseBest)
+                statMMSE = 'Target Not Met';
+                berMMSEbest = berMMSE;
+                MbestMMSE = M(ii);
+                RbestMMSE = Rst{jj};
+                DRbestMMSE = DR;
+            end
+        end
+        if(berZF < targBER)
+            if(DR > DRbestZF)
+                statZF = 'Target Met';
+                berZFbest = berZF;
+                MbestZF = M(ii);
+                RbestZF = Rst{jj};
+                DRbestZF = DR;
+                zfBest = true;
+            end
+        else            
+            if((berZF < berZFbest) && ~zfBest)
+                statZF = 'Target Not Met';
+                berZFbest = berZF;
+                MbestZF = M(ii);
+                RbestZF = Rst{jj};
+                DRbestZF = DR;
+            end
+        end
+        
+        %Print Information
+        if(prnt)
+            fprintf(['%2d QAM, Rate %s, MMSE BER = %.2e, ZF BER = %.2e',...
+            ', Data Rate = %2.0f Mbps\n'],M(ii),Rst{jj},berMMSE,berZF,DR)
+        end
+        
+    end
+end
+
+if(prnt)
+    fprintf('\n')
+    fprintf('Best Configurations\n')
+    fprintf(['MMSE:\t %2d QAM, Rate %s, BER = %.2e, Data Rate = %2.0f Mbps',...
+        ', %s\n'],MbestMMSE,RbestMMSE,berMMSEbest,DRbestMMSE,statMMSE)
+    fprintf(['ZF:\t\t %2d QAM, Rate %s, BER = %.2e, Data Rate = %2.0f Mbps',...
+        ', %s\n\n'],MbestZF,RbestZF,berZFbest,DRbestZF,statZF)
+end
+
+
+
+
+##### SOURCE END #####
+--></body></html>

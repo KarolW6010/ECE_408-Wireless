@@ -1,0 +1,293 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>mmse_zfMIMO</title><meta name="generator" content="MATLAB 9.7"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2020-04-23"><meta name="DC.source" content="mmse_zfMIMO.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><pre class="codeinput"><span class="keyword">function</span> [berMMSE,berZF] = mmse_zfMIMO(ants,M,R,SNRdB,data,H,DataBits)
+<span class="comment">%{
+</span><span class="comment">Sends the data through a flat fading channel and uses an MMSE equalizer and
+</span><span class="comment">a Zero Forcing equalizer separately.  Returns the BER for both cases
+</span><span class="comment">
+</span><span class="comment">Inputs:
+</span><span class="comment">    ants        : (1, ) Number of Tx and Rx antennas (ants by ants system)
+</span><span class="comment">    M           : (1, ) M-ary QAM (2,4,16,64)
+</span><span class="comment">    R           : (1, ) ECC code rate (1/2, 2/3, 3/4)
+</span><span class="comment">    SNRdB       : (1, ) SNR in dB
+</span><span class="comment">    data        : (N,ants) Data to be sent over the channel
+</span><span class="comment">    H           : {m}(ants,ants) Cell array containing N MIMO channels
+</span><span class="comment">    DataBits    : (log2(M)*R*N,ants) Binary data (original)
+</span><span class="comment">
+</span><span class="comment">Outputs:
+</span><span class="comment">    berMMSE     : (1, ) BER for the data using MMSE equalizer
+</span><span class="comment">    berZF       : (1, ) BER for the data using ZF equalizer
+</span><span class="comment">%}
+</span>
+N = size(data,1);               <span class="comment">%Number of sent symbols</span>
+
+<span class="comment">%Select Proper Convolutional Decoder</span>
+trellis = poly2trellis([7],[133,171]);
+vitDecoder = comm.ViterbiDecoder(trellis,<span class="string">'InputFormat'</span>,<span class="string">'Hard'</span>);
+vitDecoder.TerminationMethod = <span class="string">'Truncated'</span>;
+<span class="keyword">switch</span> R
+    <span class="keyword">case</span>(1/2)
+
+    <span class="keyword">case</span>(2/3)
+        vitDecoder.PuncturePatternSource = <span class="string">'Property'</span>;
+        vitDecoder.PuncturePattern = [1;1;1;0];
+
+    <span class="keyword">case</span>(3/4)
+        vitDecoder.PuncturePatternSource = <span class="string">'Property'</span>;
+        vitDecoder.PuncturePattern = [1;1;1;0;0;1];
+
+    <span class="keyword">otherwise</span>
+        error(<span class="string">'Choose one of available encoding rates!'</span>)
+<span class="keyword">end</span>
+
+<span class="comment">%Apply the channel</span>
+appChan = nan(ants,N);
+<span class="keyword">for</span> ii = 1:N
+    appChan(:,ii) = H{ii}*data(ii,:).';
+<span class="keyword">end</span>
+
+<span class="comment">%Add AWGN</span>
+noise = nan(ants,N);
+<span class="keyword">for</span> ii = 1:ants
+    sigPower = mean(abs(appChan(ii,:)).^2);
+    noiseVar = sigPower*10^(-SNRdB/10);
+    noise(ii,:) = sqrt(noiseVar/2)*(randn(1,N) + 1j*randn(1,N));
+<span class="keyword">end</span>
+rx = appChan + noise;       <span class="comment">%Received signal</span>
+
+<span class="comment">%Apply the equalizers</span>
+rxMMSE = nan(N,ants);
+rxZF = nan(N,ants);
+<span class="keyword">for</span> ii = 1:N
+    temp = H{ii}'*H{ii};
+    temp2 = H{ii}'*rx(:,ii);
+    rxMMSE(ii,:) = (((temp + 10^(-SNRdB/10)*eye(ants))^-1)*temp2).';
+    rxZF(ii,:) = ((temp^-1)*temp2).';
+<span class="keyword">end</span>
+
+<span class="comment">%Demodulate the symbols</span>
+deModMMSE = nan(log2(M)*N,ants);
+deModZF = nan(log2(M)*N,ants);
+<span class="keyword">for</span> ii = 1:ants
+    temp = rxMMSE(:,ii).';
+    temp1 = qamdemod(temp,M,<span class="string">'OutputType'</span>,<span class="string">'bit'</span>,<span class="string">'UnitAveragePower'</span>,true).';
+    deModMMSE(:,ii) = temp1(:);
+
+    temp = rxZF(:,ii).';
+    temp1 = qamdemod(temp,M,<span class="string">'OutputType'</span>,<span class="string">'bit'</span>,<span class="string">'UnitAveragePower'</span>,true).';
+    deModZF(:,ii) = temp1(:);
+<span class="keyword">end</span>
+
+<span class="comment">%Deinterleave to get the encoded bits</span>
+nCodedBits = log2(M)*N;
+int = reshape(1:100,10,10).';
+int = int(:);
+Inter = repmat(int,nCodedBits/1e2,1) + repelem((0:(nCodedBits/1e2-1)).'*100,100,1);
+[~,deInter] = sort(Inter);
+CodedBitsMMSE = deModMMSE(deInter,:);
+CodedBitsZF = deModZF(deInter,:);
+
+<span class="comment">%Deocde</span>
+decBitsMMSE = nan(size(DataBits));
+decBitsZF = nan(size(DataBits));
+<span class="keyword">for</span> ii = 1:ants
+    decBitsMMSE(:,ii) = vitDecoder(CodedBitsMMSE(:,ii));
+    vitDecoder.reset();
+
+    decBitsZF(:,ii) = vitDecoder(CodedBitsZF(:,ii));
+    vitDecoder.reset();
+<span class="keyword">end</span>
+
+berMMSE = mean(decBitsMMSE ~= DataBits,<span class="string">'all'</span>);
+berZF = mean(decBitsZF ~= DataBits,<span class="string">'all'</span>);
+</pre><p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2019b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+function [berMMSE,berZF] = mmse_zfMIMO(ants,M,R,SNRdB,data,H,DataBits)
+%{
+Sends the data through a flat fading channel and uses an MMSE equalizer and
+a Zero Forcing equalizer separately.  Returns the BER for both cases
+
+Inputs:
+    ants        : (1, ) Number of Tx and Rx antennas (ants by ants system)
+    M           : (1, ) M-ary QAM (2,4,16,64)
+    R           : (1, ) ECC code rate (1/2, 2/3, 3/4)
+    SNRdB       : (1, ) SNR in dB
+    data        : (N,ants) Data to be sent over the channel
+    H           : {m}(ants,ants) Cell array containing N MIMO channels
+    DataBits    : (log2(M)*R*N,ants) Binary data (original)
+
+Outputs:
+    berMMSE     : (1, ) BER for the data using MMSE equalizer
+    berZF       : (1, ) BER for the data using ZF equalizer
+%}
+
+N = size(data,1);               %Number of sent symbols
+
+%Select Proper Convolutional Decoder
+trellis = poly2trellis([7],[133,171]);
+vitDecoder = comm.ViterbiDecoder(trellis,'InputFormat','Hard');
+vitDecoder.TerminationMethod = 'Truncated';
+switch R
+    case(1/2)
+        
+    case(2/3)
+        vitDecoder.PuncturePatternSource = 'Property';
+        vitDecoder.PuncturePattern = [1;1;1;0];
+        
+    case(3/4)
+        vitDecoder.PuncturePatternSource = 'Property';
+        vitDecoder.PuncturePattern = [1;1;1;0;0;1];
+
+    otherwise
+        error('Choose one of available encoding rates!')
+end
+
+%Apply the channel
+appChan = nan(ants,N);
+for ii = 1:N 
+    appChan(:,ii) = H{ii}*data(ii,:).';
+end
+
+%Add AWGN
+noise = nan(ants,N);
+for ii = 1:ants
+    sigPower = mean(abs(appChan(ii,:)).^2);
+    noiseVar = sigPower*10^(-SNRdB/10);
+    noise(ii,:) = sqrt(noiseVar/2)*(randn(1,N) + 1j*randn(1,N));
+end
+rx = appChan + noise;       %Received signal
+
+%Apply the equalizers
+rxMMSE = nan(N,ants);
+rxZF = nan(N,ants);
+for ii = 1:N
+    temp = H{ii}'*H{ii};
+    temp2 = H{ii}'*rx(:,ii);
+    rxMMSE(ii,:) = (((temp + 10^(-SNRdB/10)*eye(ants))^-1)*temp2).';
+    rxZF(ii,:) = ((temp^-1)*temp2).';
+end
+
+%Demodulate the symbols
+deModMMSE = nan(log2(M)*N,ants);
+deModZF = nan(log2(M)*N,ants);
+for ii = 1:ants
+    temp = rxMMSE(:,ii).';
+    temp1 = qamdemod(temp,M,'OutputType','bit','UnitAveragePower',true).';
+    deModMMSE(:,ii) = temp1(:);
+    
+    temp = rxZF(:,ii).';
+    temp1 = qamdemod(temp,M,'OutputType','bit','UnitAveragePower',true).';
+    deModZF(:,ii) = temp1(:);
+end
+
+%Deinterleave to get the encoded bits
+nCodedBits = log2(M)*N;
+int = reshape(1:100,10,10).';
+int = int(:);
+Inter = repmat(int,nCodedBits/1e2,1) + repelem((0:(nCodedBits/1e2-1)).'*100,100,1);
+[~,deInter] = sort(Inter);
+CodedBitsMMSE = deModMMSE(deInter,:);
+CodedBitsZF = deModZF(deInter,:);
+
+%Deocde
+decBitsMMSE = nan(size(DataBits));
+decBitsZF = nan(size(DataBits));
+for ii = 1:ants
+    decBitsMMSE(:,ii) = vitDecoder(CodedBitsMMSE(:,ii));
+    vitDecoder.reset();
+    
+    decBitsZF(:,ii) = vitDecoder(CodedBitsZF(:,ii));
+    vitDecoder.reset();
+end
+
+berMMSE = mean(decBitsMMSE ~= DataBits,'all');
+berZF = mean(decBitsZF ~= DataBits,'all');
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+##### SOURCE END #####
+--></body></html>

@@ -1,0 +1,200 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>genMIMO_OFDMdata</title><meta name="generator" content="MATLAB 9.7"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2020-04-24"><meta name="DC.source" content="genMIMO_OFDMdata.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><pre class="codeinput"><span class="keyword">function</span> [DataBits,data,H,DR] = genMIMO_OFDMdata(ants,M,R,N,fD)
+<span class="comment">%{
+</span><span class="comment">Generates MIMO-OFDM data for the system given the parameters. Use a
+</span><span class="comment">sampling rate of 20 MHz (in line with 802.11a).
+</span><span class="comment">
+</span><span class="comment">Inputs:
+</span><span class="comment">    ants        : (1, ) Number of Tx and Rx antennas (ants by ants system)
+</span><span class="comment">    M           : (1, ) M-ary QAM (2,4,16,64)
+</span><span class="comment">    R           : (1, ) ECC code rate (1/2, 2/3, 3/4)
+</span><span class="comment">    N           : (1, ) Number of OFDM symbols to generate
+</span><span class="comment">    fD          : (1, ) Max doppler frequency for flat fading channel
+</span><span class="comment">
+</span><span class="comment">Outputs:
+</span><span class="comment">    DataBits    : (log2(M)*N*48*R,ants) Binary data for each of the antennas
+</span><span class="comment">    data        : (N*80,ants) The symbols that are being sent
+</span><span class="comment">    H           : {N*80}(ants,ants) Cell array containing the MIMO channels
+</span><span class="comment">    DR          : (1, ) The data rate of the system (bits per second)
+</span><span class="comment">%}
+</span>
+fs = 2e7;           <span class="comment">%Sampling rate of 20 MHz</span>
+T = (N*80)/fs;      <span class="comment">%Duration of the samples</span>
+
+<span class="comment">%Generate Data</span>
+DataBits = nan(log2(M)*N*48*R,ants);
+data = nan(N*80,ants);
+<span class="keyword">for</span> ii = 1:ants
+    [DataBits1,data1] = OFDMsymGen(N,R,M);
+    DataBits(:,ii) = DataBits1;
+    data(:,ii) = data1;
+<span class="keyword">end</span>
+
+<span class="comment">%Construct the MIMO flat fading channels</span>
+channels = cell(ants,ants);
+N1 = N*80;
+H = cell(1,N1);
+<span class="keyword">for</span> ii = 1:ants
+    <span class="keyword">for</span> jj = 1:ants
+        <span class="keyword">if</span>(2*T*fD &lt; 2)
+            k = fs/(N1*fD);
+            r = getRayleighFading(k*T,fD,k*N1);
+            r = r(1:N1);
+        <span class="keyword">else</span>
+            <span class="keyword">if</span>(mod(T*fD,1) == 0)
+                r = getRayleighFading(T,fD,N1);
+            <span class="keyword">else</span>
+                k = mod(T*fD,1);
+                r = getRayleighFading(round(T/k,5),fD,round(N1/k,5));
+                r = r(1:N1);
+            <span class="keyword">end</span>
+        <span class="keyword">end</span>
+        channels{ii,jj} = r;
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+<span class="keyword">for</span> ii = 1:N1
+    <span class="keyword">for</span> jj = 1:ants
+        <span class="keyword">for</span> kk = 1:ants
+            H{ii}(jj,kk) = channels{jj,kk}(ii);
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+
+<span class="comment">%Calculate Data Rate</span>
+DR = 48*R*log2(M)*fs*ants/80;
+</pre><p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2019b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+function [DataBits,data,H,DR] = genMIMO_OFDMdata(ants,M,R,N,fD)
+%{
+Generates MIMO-OFDM data for the system given the parameters. Use a
+sampling rate of 20 MHz (in line with 802.11a).
+
+Inputs:
+    ants        : (1, ) Number of Tx and Rx antennas (ants by ants system)
+    M           : (1, ) M-ary QAM (2,4,16,64)
+    R           : (1, ) ECC code rate (1/2, 2/3, 3/4)
+    N           : (1, ) Number of OFDM symbols to generate 
+    fD          : (1, ) Max doppler frequency for flat fading channel
+
+Outputs:
+    DataBits    : (log2(M)*N*48*R,ants) Binary data for each of the antennas
+    data        : (N*80,ants) The symbols that are being sent
+    H           : {N*80}(ants,ants) Cell array containing the MIMO channels
+    DR          : (1, ) The data rate of the system (bits per second)
+%}
+
+fs = 2e7;           %Sampling rate of 20 MHz
+T = (N*80)/fs;      %Duration of the samples
+
+%Generate Data
+DataBits = nan(log2(M)*N*48*R,ants);
+data = nan(N*80,ants);
+for ii = 1:ants
+    [DataBits1,data1] = OFDMsymGen(N,R,M);
+    DataBits(:,ii) = DataBits1;
+    data(:,ii) = data1;
+end
+
+%Construct the MIMO flat fading channels
+channels = cell(ants,ants);
+N1 = N*80;
+H = cell(1,N1);
+for ii = 1:ants
+    for jj = 1:ants
+        if(2*T*fD < 2)
+            k = fs/(N1*fD);
+            r = getRayleighFading(k*T,fD,k*N1);
+            r = r(1:N1);
+        else
+            if(mod(T*fD,1) == 0)
+                r = getRayleighFading(T,fD,N1);
+            else
+                k = mod(T*fD,1);
+                r = getRayleighFading(round(T/k,5),fD,round(N1/k,5));
+                r = r(1:N1);
+            end
+        end
+        channels{ii,jj} = r;
+    end
+end
+for ii = 1:N1
+    for jj = 1:ants
+        for kk = 1:ants
+            H{ii}(jj,kk) = channels{jj,kk}(ii);
+        end
+    end
+end
+
+%Calculate Data Rate
+DR = 48*R*log2(M)*fs*ants/80;
+
+    
+##### SOURCE END #####
+--></body></html>

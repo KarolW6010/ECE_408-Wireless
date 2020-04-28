@@ -1,0 +1,373 @@
+
+<!DOCTYPE html
+  PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html><head>
+      <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+   <!--
+This HTML was auto-generated from MATLAB code.
+To make changes, update the MATLAB code and republish this document.
+      --><title>main</title><meta name="generator" content="MATLAB 9.7"><link rel="schema.DC" href="http://purl.org/dc/elements/1.1/"><meta name="DC.date" content="2020-04-24"><meta name="DC.source" content="main.m"><style type="text/css">
+html,body,div,span,applet,object,iframe,h1,h2,h3,h4,h5,h6,p,blockquote,pre,a,abbr,acronym,address,big,cite,code,del,dfn,em,font,img,ins,kbd,q,s,samp,small,strike,strong,sub,sup,tt,var,b,u,i,center,dl,dt,dd,ol,ul,li,fieldset,form,label,legend,table,caption,tbody,tfoot,thead,tr,th,td{margin:0;padding:0;border:0;outline:0;font-size:100%;vertical-align:baseline;background:transparent}body{line-height:1}ol,ul{list-style:none}blockquote,q{quotes:none}blockquote:before,blockquote:after,q:before,q:after{content:'';content:none}:focus{outine:0}ins{text-decoration:none}del{text-decoration:line-through}table{border-collapse:collapse;border-spacing:0}
+
+html { min-height:100%; margin-bottom:1px; }
+html body { height:100%; margin:0px; font-family:Arial, Helvetica, sans-serif; font-size:10px; color:#000; line-height:140%; background:#fff none; overflow-y:scroll; }
+html body td { vertical-align:top; text-align:left; }
+
+h1 { padding:0px; margin:0px 0px 25px; font-family:Arial, Helvetica, sans-serif; font-size:1.5em; color:#d55000; line-height:100%; font-weight:normal; }
+h2 { padding:0px; margin:0px 0px 8px; font-family:Arial, Helvetica, sans-serif; font-size:1.2em; color:#000; font-weight:bold; line-height:140%; border-bottom:1px solid #d6d4d4; display:block; }
+h3 { padding:0px; margin:0px 0px 5px; font-family:Arial, Helvetica, sans-serif; font-size:1.1em; color:#000; font-weight:bold; line-height:140%; }
+
+a { color:#005fce; text-decoration:none; }
+a:hover { color:#005fce; text-decoration:underline; }
+a:visited { color:#004aa0; text-decoration:none; }
+
+p { padding:0px; margin:0px 0px 20px; }
+img { padding:0px; margin:0px 0px 20px; border:none; }
+p img, pre img, tt img, li img, h1 img, h2 img { margin-bottom:0px; } 
+
+ul { padding:0px; margin:0px 0px 20px 23px; list-style:square; }
+ul li { padding:0px; margin:0px 0px 7px 0px; }
+ul li ul { padding:5px 0px 0px; margin:0px 0px 7px 23px; }
+ul li ol li { list-style:decimal; }
+ol { padding:0px; margin:0px 0px 20px 0px; list-style:decimal; }
+ol li { padding:0px; margin:0px 0px 7px 23px; list-style-type:decimal; }
+ol li ol { padding:5px 0px 0px; margin:0px 0px 7px 0px; }
+ol li ol li { list-style-type:lower-alpha; }
+ol li ul { padding-top:7px; }
+ol li ul li { list-style:square; }
+
+.content { font-size:1.2em; line-height:140%; padding: 20px; }
+
+pre, code { font-size:12px; }
+tt { font-size: 1.2em; }
+pre { margin:0px 0px 20px; }
+pre.codeinput { padding:10px; border:1px solid #d3d3d3; background:#f7f7f7; }
+pre.codeoutput { padding:10px 11px; margin:0px 0px 20px; color:#4c4c4c; }
+pre.error { color:red; }
+
+@media print { pre.codeinput, pre.codeoutput { word-wrap:break-word; width:100%; } }
+
+span.keyword { color:#0000FF }
+span.comment { color:#228B22 }
+span.string { color:#A020F0 }
+span.untermstring { color:#B20000 }
+span.syscmd { color:#B28C00 }
+
+.footer { width:auto; padding:10px 0px; margin:25px 0px 0px; border-top:1px dotted #878787; font-size:0.8em; line-height:140%; font-style:italic; color:#878787; text-align:left; float:none; }
+.footer p { margin:0px; }
+.footer a { color:#878787; }
+.footer a:hover { color:#878787; text-decoration:underline; }
+.footer a:visited { color:#878787; }
+
+table th { padding:7px 5px; text-align:left; vertical-align:middle; border: 1px solid #d6d4d4; font-weight:bold; }
+table td { padding:7px 5px; text-align:left; vertical-align:top; border:1px solid #d6d4d4; }
+
+
+
+
+
+  </style></head><body><div class="content"><pre class="codeinput"><span class="comment">%Karol Wadolowski - Project #3: MIMO-OFDM (Part 3)</span>
+clear; clc; close <span class="string">all</span>;
+
+N = 3e3;                <span class="comment">%Number of symbols to generate</span>
+SNRdB = 35;             <span class="comment">%SNR in dB</span>
+M = [2,4,16,64];        <span class="comment">%M-ary QAM</span>
+R = [1/2,2/3,3/4];      <span class="comment">%ECC code rates</span>
+Rst = {<span class="string">'1/2'</span>,<span class="string">'2/3'</span>,<span class="string">'3/4'</span>};
+fD = 10.^(2:4);         <span class="comment">%Max Doppler Frequency for Rayleigh Fading</span>
+targBER = 10.^(-(2:4)); <span class="comment">%Target System BER</span>
+
+<span class="comment">%Will hold the BERs for each configuration</span>
+BER_SVD  = cell(length(fD),1);
+BER_MMSE = cell(length(fD),1);
+BER_ZF   = cell(length(fD),1);
+
+<span class="comment">%Will hold the possible data rates</span>
+DR = nan(length(M),length(R));
+
+<span class="comment">%Calculate the BERs for all the scenarios</span>
+<span class="keyword">for</span> ii = 1:length(fD)
+    fprintf(<span class="string">'Calculating BERs for fD = %.e Hz....'</span>, fD(ii))
+
+    BER_SVD{ii}  = nan(length(M),length(R));
+    BER_MMSE{ii} = nan(length(M),length(R));
+    BER_ZF{ii}   = nan(length(M),length(R));
+
+    <span class="keyword">for</span> jj = 1:length(M)
+        <span class="keyword">for</span> kk = 1:length(R)
+            <span class="comment">%Generate Data</span>
+            [DataBits,data,H,dr] = genMIMO_OFDMdata(2,M(jj),R(kk),N,fD(ii));
+            DR(jj,kk) = dr;
+
+            <span class="comment">%Send and Decode data various ways</span>
+            berSVD = precodingMIMO_OFDM(2,M(jj),R(kk),SNRdB,data,H,DataBits);
+            [berMMSE,berZF] = mmse_zfMIMO_OFDM(2,M(jj),R(kk),SNRdB,data,H,<span class="keyword">...</span>
+                DataBits);
+
+            <span class="comment">%Store BER</span>
+            BER_SVD{ii}(jj,kk)  = berSVD;
+            BER_MMSE{ii}(jj,kk) = berMMSE;
+            BER_ZF{ii}(jj,kk)   = berZF;
+        <span class="keyword">end</span>
+    <span class="keyword">end</span>
+    fprintf(<span class="string">'Complete!\n'</span>)
+<span class="keyword">end</span>
+fprintf(<span class="string">'\n'</span>)
+
+DR = DR/1e6;    <span class="comment">%Data rate in Mbps</span>
+
+<span class="comment">%For each target BER and channel type print the best configurations. If</span>
+<span class="comment">%some configuration met the BER target then choose the highest Data Rate.</span>
+<span class="comment">%If no configuration met the BER choose the best BER configuration.</span>
+<span class="keyword">for</span> ii = 1:length(fD)
+    fprintf([<span class="string">'%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%'</span>,<span class="keyword">...</span>
+        <span class="string">'%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n\n'</span>])
+
+    fprintf([<span class="string">'Flat fading Rayleigh channel with max Doppler frequency '</span>,<span class="keyword">...</span>
+        <span class="string">'%.0e Hz\n'</span>],fD(ii))
+    <span class="keyword">for</span> jj = 1:length(targBER)
+        <span class="comment">%For SVD</span>
+        <span class="keyword">if</span>(min(BER_SVD{ii},[],<span class="string">'all'</span>) &lt; targBER(jj))
+            mask = BER_SVD{ii} &lt; targBER(jj);
+            temp = mask.*DR;
+            [bestSVD,svdR] = max(temp,[],1);
+            [~,svdC] = max(bestSVD);
+            statSVD = <span class="string">'Target Met'</span>;
+        <span class="keyword">else</span>
+            [bestSVD,svdR] = min(BER_SVD{ii},[],1);
+            [~,svdC] = min(bestSVD);
+            statSVD = <span class="string">'Target Not Met'</span>;
+        <span class="keyword">end</span>
+
+        <span class="comment">%For MMSE</span>
+        <span class="keyword">if</span>(min(BER_MMSE{ii},[],<span class="string">'all'</span>) &lt; targBER(jj))
+            mask = BER_MMSE{ii} &lt; targBER(jj);
+            temp = mask.*DR;
+            [bestMMSE,mmseR] = max(temp,[],1);
+            [~,mmseC] = max(bestMMSE);
+            statMMSE = <span class="string">'Target Met'</span>;
+        <span class="keyword">else</span>
+            [bestMMSE,mmseR] = min(BER_MMSE{ii},[],1);
+            [~,mmseC] = min(bestMMSE);
+            statMMSE = <span class="string">'Target Not Met'</span>;
+        <span class="keyword">end</span>
+
+        <span class="comment">%For ZF</span>
+        <span class="keyword">if</span>(min(BER_ZF{ii},[],<span class="string">'all'</span>) &lt; targBER(jj))
+            mask = BER_ZF{ii} &lt; targBER(jj);
+            temp = mask.*DR;
+            [bestZF,zfR] = max(temp,[],1);
+            [~,zfC] = max(bestZF);
+            statZF = <span class="string">'Target Met'</span>;
+        <span class="keyword">else</span>
+            [bestZF,zfR] = min(BER_ZF{ii},[],1);
+            [~,zfC] = min(bestZF);
+            statZF = <span class="string">'Target Not Met'</span>;
+        <span class="keyword">end</span>
+
+        fprintf(<span class="string">'Target BER = %.0e, SNR = %.1f dB, %.1e OFDM Symbols used\n'</span>,<span class="keyword">...</span>
+            targBER(jj),SNRdB,N)
+        fprintf(<span class="string">'Best Configurations\n'</span>)
+
+        fprintf([<span class="string">'%4s:\t %2d QAM, Rate %s, BER = %.2e, Data Rate = '</span>,<span class="keyword">...</span>
+            <span class="string">'%3.0f Mbps, %s\n'</span>],<span class="string">'SVD'</span>,M(svdR(svdC)),Rst{svdC},<span class="keyword">...</span>
+            BER_SVD{ii}(svdR(svdC),svdC),DR(svdR(svdC),svdC),statSVD)
+
+        fprintf([<span class="string">'%4s:\t %2d QAM, Rate %s, BER = %.2e, Data Rate = '</span>,<span class="keyword">...</span>
+            <span class="string">'%3.0f Mbps, %s\n'</span>],<span class="string">'MMSE'</span>,M(mmseR(mmseC)),Rst{mmseC},<span class="keyword">...</span>
+            BER_MMSE{ii}(mmseR(mmseC),mmseC),DR(mmseR(mmseC),mmseC),<span class="keyword">...</span>
+            statMMSE)
+
+        fprintf([<span class="string">'%4s:\t %2d QAM, Rate %s, BER = %.2e, Data Rate = '</span>,<span class="keyword">...</span>
+            <span class="string">'%3.0f Mbps, %s\n\n'</span>],<span class="string">'ZF'</span>,M(zfR(zfC)),Rst{zfC},<span class="keyword">...</span>
+            BER_ZF{ii}(zfR(zfC),zfC),DR(zfR(zfC),zfC),statZF)
+    <span class="keyword">end</span>
+<span class="keyword">end</span>
+</pre><pre class="codeoutput">Calculating BERs for fD = 1e+02 Hz....Complete!
+Calculating BERs for fD = 1e+03 Hz....Complete!
+Calculating BERs for fD = 1e+04 Hz....Complete!
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Flat fading Rayleigh channel with max Doppler frequency 1e+02 Hz
+Target BER = 1e-02, SNR = 35.0 dB, 3.0e+03 OFDM Symbols used
+Best Configurations
+ SVD:	 16 QAM, Rate 3/4, BER = 9.85e-03, Data Rate =  72 Mbps, Target Met
+MMSE:	 16 QAM, Rate 3/4, BER = 8.76e-03, Data Rate =  72 Mbps, Target Met
+  ZF:	 16 QAM, Rate 3/4, BER = 8.76e-03, Data Rate =  72 Mbps, Target Met
+
+Target BER = 1e-03, SNR = 35.0 dB, 3.0e+03 OFDM Symbols used
+Best Configurations
+ SVD:	  4 QAM, Rate 2/3, BER = 7.81e-06, Data Rate =  32 Mbps, Target Met
+MMSE:	  4 QAM, Rate 2/3, BER = 0.00e+00, Data Rate =  32 Mbps, Target Met
+  ZF:	  4 QAM, Rate 2/3, BER = 0.00e+00, Data Rate =  32 Mbps, Target Met
+
+Target BER = 1e-04, SNR = 35.0 dB, 3.0e+03 OFDM Symbols used
+Best Configurations
+ SVD:	  4 QAM, Rate 2/3, BER = 7.81e-06, Data Rate =  32 Mbps, Target Met
+MMSE:	  4 QAM, Rate 2/3, BER = 0.00e+00, Data Rate =  32 Mbps, Target Met
+  ZF:	  4 QAM, Rate 2/3, BER = 0.00e+00, Data Rate =  32 Mbps, Target Met
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Flat fading Rayleigh channel with max Doppler frequency 1e+03 Hz
+Target BER = 1e-02, SNR = 35.0 dB, 3.0e+03 OFDM Symbols used
+Best Configurations
+ SVD:	  4 QAM, Rate 3/4, BER = 3.54e-03, Data Rate =  36 Mbps, Target Met
+MMSE:	  4 QAM, Rate 3/4, BER = 3.42e-03, Data Rate =  36 Mbps, Target Met
+  ZF:	  4 QAM, Rate 3/4, BER = 4.16e-03, Data Rate =  36 Mbps, Target Met
+
+Target BER = 1e-03, SNR = 35.0 dB, 3.0e+03 OFDM Symbols used
+Best Configurations
+ SVD:	  2 QAM, Rate 3/4, BER = 5.05e-04, Data Rate =  18 Mbps, Target Met
+MMSE:	  2 QAM, Rate 3/4, BER = 3.15e-04, Data Rate =  18 Mbps, Target Met
+  ZF:	  2 QAM, Rate 3/4, BER = 4.72e-04, Data Rate =  18 Mbps, Target Met
+
+Target BER = 1e-04, SNR = 35.0 dB, 3.0e+03 OFDM Symbols used
+Best Configurations
+ SVD:	  2 QAM, Rate 1/2, BER = 1.18e-04, Data Rate =  12 Mbps, Target Not Met
+MMSE:	  2 QAM, Rate 1/2, BER = 0.00e+00, Data Rate =  12 Mbps, Target Met
+  ZF:	  2 QAM, Rate 1/2, BER = 6.94e-05, Data Rate =  12 Mbps, Target Met
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+Flat fading Rayleigh channel with max Doppler frequency 1e+04 Hz
+Target BER = 1e-02, SNR = 35.0 dB, 3.0e+03 OFDM Symbols used
+Best Configurations
+ SVD:	  4 QAM, Rate 1/2, BER = 7.80e-03, Data Rate =  24 Mbps, Target Met
+MMSE:	  4 QAM, Rate 2/3, BER = 6.83e-03, Data Rate =  32 Mbps, Target Met
+  ZF:	  4 QAM, Rate 1/2, BER = 8.19e-03, Data Rate =  24 Mbps, Target Met
+
+Target BER = 1e-03, SNR = 35.0 dB, 3.0e+03 OFDM Symbols used
+Best Configurations
+ SVD:	  2 QAM, Rate 1/2, BER = 2.42e-03, Data Rate =  12 Mbps, Target Not Met
+MMSE:	  2 QAM, Rate 1/2, BER = 5.14e-04, Data Rate =  12 Mbps, Target Met
+  ZF:	  2 QAM, Rate 1/2, BER = 2.98e-03, Data Rate =  12 Mbps, Target Not Met
+
+Target BER = 1e-04, SNR = 35.0 dB, 3.0e+03 OFDM Symbols used
+Best Configurations
+ SVD:	  2 QAM, Rate 1/2, BER = 2.42e-03, Data Rate =  12 Mbps, Target Not Met
+MMSE:	  2 QAM, Rate 1/2, BER = 5.14e-04, Data Rate =  12 Mbps, Target Not Met
+  ZF:	  2 QAM, Rate 1/2, BER = 2.98e-03, Data Rate =  12 Mbps, Target Not Met
+
+</pre><p class="footer"><br><a href="https://www.mathworks.com/products/matlab/">Published with MATLAB&reg; R2019b</a><br></p></div><!--
+##### SOURCE BEGIN #####
+%Karol Wadolowski - Project #3: MIMO-OFDM (Part 3)
+clear; clc; close all;
+
+N = 3e3;                %Number of symbols to generate
+SNRdB = 35;             %SNR in dB
+M = [2,4,16,64];        %M-ary QAM
+R = [1/2,2/3,3/4];      %ECC code rates
+Rst = {'1/2','2/3','3/4'};
+fD = 10.^(2:4);         %Max Doppler Frequency for Rayleigh Fading
+targBER = 10.^(-(2:4)); %Target System BER
+
+%Will hold the BERs for each configuration
+BER_SVD  = cell(length(fD),1);
+BER_MMSE = cell(length(fD),1);
+BER_ZF   = cell(length(fD),1);
+
+%Will hold the possible data rates
+DR = nan(length(M),length(R));     
+
+%Calculate the BERs for all the scenarios
+for ii = 1:length(fD)
+    fprintf('Calculating BERs for fD = %.e Hz....', fD(ii))
+    
+    BER_SVD{ii}  = nan(length(M),length(R));
+    BER_MMSE{ii} = nan(length(M),length(R));
+    BER_ZF{ii}   = nan(length(M),length(R));
+    
+    for jj = 1:length(M)
+        for kk = 1:length(R)
+            %Generate Data
+            [DataBits,data,H,dr] = genMIMO_OFDMdata(2,M(jj),R(kk),N,fD(ii));
+            DR(jj,kk) = dr;
+            
+            %Send and Decode data various ways
+            berSVD = precodingMIMO_OFDM(2,M(jj),R(kk),SNRdB,data,H,DataBits);
+            [berMMSE,berZF] = mmse_zfMIMO_OFDM(2,M(jj),R(kk),SNRdB,data,H,...
+                DataBits);
+            
+            %Store BER
+            BER_SVD{ii}(jj,kk)  = berSVD;
+            BER_MMSE{ii}(jj,kk) = berMMSE;
+            BER_ZF{ii}(jj,kk)   = berZF;
+        end
+    end
+    fprintf('Complete!\n')
+end
+fprintf('\n')
+
+DR = DR/1e6;    %Data rate in Mbps
+
+%For each target BER and channel type print the best configurations. If
+%some configuration met the BER target then choose the highest Data Rate.
+%If no configuration met the BER choose the best BER configuration.
+for ii = 1:length(fD)
+    fprintf(['%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%',...
+        '%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%\n\n'])
+    
+    fprintf(['Flat fading Rayleigh channel with max Doppler frequency ',...
+        '%.0e Hz\n'],fD(ii))
+    for jj = 1:length(targBER)
+        %For SVD
+        if(min(BER_SVD{ii},[],'all') < targBER(jj))
+            mask = BER_SVD{ii} < targBER(jj);
+            temp = mask.*DR;
+            [bestSVD,svdR] = max(temp,[],1);
+            [~,svdC] = max(bestSVD);
+            statSVD = 'Target Met';
+        else
+            [bestSVD,svdR] = min(BER_SVD{ii},[],1);
+            [~,svdC] = min(bestSVD);
+            statSVD = 'Target Not Met';
+        end
+           
+        %For MMSE
+        if(min(BER_MMSE{ii},[],'all') < targBER(jj))
+            mask = BER_MMSE{ii} < targBER(jj);
+            temp = mask.*DR;
+            [bestMMSE,mmseR] = max(temp,[],1);
+            [~,mmseC] = max(bestMMSE);
+            statMMSE = 'Target Met';
+        else
+            [bestMMSE,mmseR] = min(BER_MMSE{ii},[],1);
+            [~,mmseC] = min(bestMMSE);
+            statMMSE = 'Target Not Met';
+        end
+        
+        %For ZF
+        if(min(BER_ZF{ii},[],'all') < targBER(jj))
+            mask = BER_ZF{ii} < targBER(jj);
+            temp = mask.*DR;
+            [bestZF,zfR] = max(temp,[],1);
+            [~,zfC] = max(bestZF);
+            statZF = 'Target Met';
+        else
+            [bestZF,zfR] = min(BER_ZF{ii},[],1);
+            [~,zfC] = min(bestZF);
+            statZF = 'Target Not Met';
+        end
+        
+        fprintf('Target BER = %.0e, SNR = %.1f dB, %.1e OFDM Symbols used\n',...
+            targBER(jj),SNRdB,N)
+        fprintf('Best Configurations\n')
+        
+        fprintf(['%4s:\t %2d QAM, Rate %s, BER = %.2e, Data Rate = ',...
+            '%3.0f Mbps, %s\n'],'SVD',M(svdR(svdC)),Rst{svdC},...
+            BER_SVD{ii}(svdR(svdC),svdC),DR(svdR(svdC),svdC),statSVD)
+        
+        fprintf(['%4s:\t %2d QAM, Rate %s, BER = %.2e, Data Rate = ',...
+            '%3.0f Mbps, %s\n'],'MMSE',M(mmseR(mmseC)),Rst{mmseC},...
+            BER_MMSE{ii}(mmseR(mmseC),mmseC),DR(mmseR(mmseC),mmseC),...
+            statMMSE)
+        
+        fprintf(['%4s:\t %2d QAM, Rate %s, BER = %.2e, Data Rate = ',...
+            '%3.0f Mbps, %s\n\n'],'ZF',M(zfR(zfC)),Rst{zfC},...
+            BER_ZF{ii}(zfR(zfC),zfC),DR(zfR(zfC),zfC),statZF)
+    end
+end
+##### SOURCE END #####
+--></body></html>
